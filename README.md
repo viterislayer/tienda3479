@@ -146,6 +146,9 @@ VPS (Ubuntu 24.04) con Docker. La app corre en `/opt/tienda3479` y usa la infrae
 del servidor (`/opt/infra`): PostgreSQL 17 (`postgres:5432`) y HTTPS con Caddy, unidos por la red `web`.
 En el servidor, `/opt/tienda3479/.env` define `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
 
+Panel web de la base de datos (pgweb, solo lectura, protegido con usuario y contraseña):
+https://db.187-127-254-87.sslip.io
+
 Publicar cambios:
 
 ```
