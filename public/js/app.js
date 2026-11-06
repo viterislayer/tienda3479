@@ -15,13 +15,12 @@ const VISTAS = {
 
 async function verificarEstado() {
   try {
-    const e = await api('/api/estado');
-    $('estado-texto').textContent = `Conectado a ${e.base}`;
-    $('estado').title = `Usuario: ${e.usuario}`;
+    await api('/api/estado');
+    $('estado-texto').textContent = 'Conectado';
     $('estado').className = 'estado ok';
     return true;
   } catch (err) {
-    $('estado-texto').textContent = 'Sin conexión a la base';
+    $('estado-texto').textContent = 'Sin conexión';
     $('estado').title = err.message;
     $('estado').className = 'estado error';
     return false;

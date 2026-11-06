@@ -41,15 +41,15 @@ body {
 h1, h2, h3 { margin: 0; letter-spacing: -.015em; }
 
 /* Estructura */
-.app { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh; }
-.contenido { padding: 34px 40px 48px; min-width: 0; max-width: 1320px; width: 100%; }
+.app { min-height: 100vh; }
+.contenido { margin-left: 236px; padding: 34px 40px 48px; min-width: 0; max-width: calc(1320px + 236px); }
 .encabezado { margin-bottom: 26px; }
 .sobretitulo { margin: 0 0 6px; color: var(--tenue); font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .encabezado h1 { font-size: 2rem; font-weight: 700; }
 .encabezado p#subtitulo { margin: 6px 0 0; color: var(--suave); }
 
 /* Barra lateral grafito */
-.barra { border-right: 1px solid var(--borde-suave); background: var(--barra); color: var(--barra-texto); display: flex; flex-direction: column; padding: 24px 14px; position: sticky; top: 0; height: 100vh; }
+.barra { border-right: 1px solid var(--borde-suave); background: var(--barra); color: var(--barra-texto); display: flex; flex-direction: column; padding: 24px 14px; position: fixed; top: 0; bottom: 0; left: 0; width: 236px; overflow-y: auto; z-index: 10; }
 .marca { display: flex; align-items: center; gap: 12px; padding: 0 8px 26px; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
 .marca strong { display: block; color: #f4f4f2; font-size: 1.02rem; }
 .marca small { color: #8d8f93; font-size: .8rem; }
@@ -210,8 +210,8 @@ nav button:focus-visible { outline-color: rgba(255, 255, 255, .5); }
 
 /* Celular */
 @media (max-width: 900px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
-  .barra { min-width: 0; position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 16px; }
+  .contenido { margin-left: 0; max-width: none; }
+  .barra { min-width: 0; position: static; width: auto; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 16px; }
   .marca { padding: 0; margin: 0; border: none; flex: 1; }
   nav { flex-direction: row; overflow-x: auto; width: 100%; min-width: 0; order: 3; padding-top: 0; }
   nav button { width: auto; white-space: nowrap; }
