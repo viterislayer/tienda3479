@@ -1,8 +1,4 @@
--- Estructura normalizada (3FN) de la Tienda 3479 - PostgreSQL
--- Se ejecuta con: npm run db:init
--- ATENCION: borra y vuelve a crear las tablas.
-
-DROP TABLE IF EXISTS detalle_venta, ventas, productos, categorias, clientes CASCADE;
+-- 001: estructura inicial normalizada (3FN)
 
 CREATE TABLE categorias (
   id      INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

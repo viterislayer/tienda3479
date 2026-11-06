@@ -1,29 +1,25 @@
-// Crea las tablas (sql/schema.sql) y carga los datos (sql/datos.sql) en una sola transacción
-// Uso: npm run db:init            -> tablas + datos
-//      npm run db:init -- --vacia -> solo tablas
+// Deja la base desde cero: borra todo, aplica las migraciones y carga los datos (sql/datos.sql)
+// Uso: npm run db:init            -> estructura + datos
+//      npm run db:init -- --vacia -> solo estructura
+// ATENCION: borra todos los datos. Para actualizar una base existente use npm run db:migrar
 require('dotenv').config({ quiet: true });
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 const { configuracion } = require('../src/db');
-
-const leer = archivo => fs.readFileSync(path.join(__dirname, '..', 'sql', archivo), 'utf8');
+const { migrar } = require('./migrar');
 
 async function main() {
-  const archivos = process.argv.includes('--vacia') ? ['schema.sql'] : ['schema.sql', 'datos.sql'];
   const cliente = new Client(configuracion);
   await cliente.connect();
   try {
-    await cliente.query('BEGIN');
-    for (const archivo of archivos) {
-      await cliente.query(leer(archivo));
-      console.log(`${archivo} ejecutado.`);
+    await cliente.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+    await migrar(cliente);
+    if (!process.argv.includes('--vacia')) {
+      await cliente.query(fs.readFileSync(path.join(__dirname, '..', 'sql', 'datos.sql'), 'utf8'));
+      console.log('datos.sql: cargado.');
     }
-    await cliente.query('COMMIT');
     console.log('Base inicializada.');
-  } catch (err) {
-    await cliente.query('ROLLBACK');
-    throw err;
   } finally {
     await cliente.end();
   }

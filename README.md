@@ -25,7 +25,7 @@ psql -U postgres -h localhost -v clave='LA_CONTRASEÑA' -f sql/crear-base.sql
 ```
 
 2. Copiar `.env.example` como `.env` y poner esa misma contraseña en `DB_PASSWORD`.
-3. Instalar dependencias y crear las tablas con los datos de la tienda:
+3. Instalar dependencias y crear la estructura con los datos de la tienda:
 
 ```
 npm install
@@ -38,16 +38,29 @@ npm run db:init
 npm start
 ```
 
-`npm run db:init` borra y vuelve a crear las tablas (`sql/schema.sql`) y carga los datos (`sql/datos.sql`)
-en una sola transacción. Para crear solo las tablas vacías: `npm run db:init -- --vacia`.
+| Comando | Qué hace |
+|---|---|
+| `npm run db:init` | Base desde cero: aplica todas las migraciones y carga `sql/datos.sql` (**borra los datos**) |
+| `npm run db:init -- --vacia` | Igual, pero sin datos |
+| `npm run db:migrar` | Aplica solo las migraciones pendientes, **sin borrar datos** |
+
+### Migraciones
+
+Cada cambio de estructura es un archivo numerado en `sql/migraciones/`. `db:migrar` aplica en orden los que faltan,
+cada uno en su propia transacción, y los registra en la tabla `schema_migraciones`. El despliegue las aplica solo.
 
 ## Base de datos
 
 `CATEGORIAS` 1─N `PRODUCTOS` 1─N `DETALLE_VENTA` N─1 `VENTAS` N─1 `CLIENTES`
 
-- Llaves primarias `GENERATED ALWAYS AS IDENTITY`, llaves foráneas, `UNIQUE` y `CHECK`.
+- Llaves primarias `GENERATED ALWAYS AS IDENTITY` y llaves foráneas en todas las relaciones.
+- Reglas `CHECK`: precio y stock no negativos, cantidad mayor que cero, nombres no vacíos, formato de correo y de NIT/DPI.
+- Únicos sin distinguir mayúsculas (índices sobre `lower()`): nombre de categoría y correo; NIT/DPI único.
 - Índices en las llaves foráneas y en la fecha de venta.
-- `ventas.fecha` es `TIMESTAMPTZ`; los reportes cuentan los días en hora de Guatemala.
+- Auditoría: `creado_en` en categorías, productos y clientes; `ventas.fecha` es `TIMESTAMPTZ`.
+- Vistas: `vista_ventas` (venta, cliente y total calculado) y `vista_inventario` (stock con su estado).
+- Tablas, columnas y vistas documentadas con `COMMENT` (visible en pgAdmin).
+- Consultas útiles para revisar la base en `sql/consultas.sql`.
 
 El paso a paso de la normalización (1FN, 2FN, 3FN) está en [docs/normalizacion.md](docs/normalizacion.md).
 
@@ -84,10 +97,13 @@ Ejemplos listos para probar en `requests.http` (extensión REST Client).
 ```
 sql/
   crear-base.sql       Usuario y base de datos (una sola vez)
-  schema.sql           Tablas, restricciones e índices
+  migraciones/         Estructura versionada: 001 tablas, 002 reglas, vistas y comentarios
   datos.sql            Datos de la tienda
+  consultas.sql        Consultas para revisar la base (estructura, relaciones, vistas)
 docs/normalizacion.md  Normalización paso a paso
-scripts/init-db.js     Ejecuta schema.sql y datos.sql (npm run db:init)
+scripts/
+  migrar.js            Aplica migraciones pendientes (npm run db:migrar)
+  init-db.js           Base desde cero (npm run db:init)
 src/
   server.js            Servidor Express y montaje de rutas
   db.js                Pool de conexiones y transacciones

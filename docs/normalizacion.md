@@ -83,10 +83,11 @@ CLIENTES (id PK, nombre, nit_dpi UNIQUE, correo UNIQUE)
 - Un cliente tiene muchas ventas (1:N).
 - Una venta tiene muchos productos y un producto aparece en muchas ventas (N:M). **DETALLE_VENTA** resuelve esa relación.
 
-**Reglas de integridad del script** (`sql/schema.sql`):
+**Reglas de integridad** (`sql/migraciones/`):
 - Llaves primarias con `GENERATED ALWAYS AS IDENTITY` (PostgreSQL genera el id).
 - Índices en las llaves foráneas y en la fecha de venta para acelerar los JOIN y los reportes.
 - Llaves foráneas: no se puede vender a un cliente ni un producto que no existe.
 - `UNIQUE` en el nombre de categoría, en el NIT/DPI y en el correo.
 - `CHECK`: precio y stock no negativos, cantidad mayor que cero.
 - `ON DELETE CASCADE`: al anular una venta se borra su detalle.
+- El total de una venta **no se guarda**: se calcula en la vista `vista_ventas` a partir del detalle (evita datos derivados, 3FN).

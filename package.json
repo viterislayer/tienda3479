@@ -5,8 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "db:migrar": "node scripts/migrar.js",
     "db:init": "node scripts/init-db.js",
-    "deploy": "git push && ssh tienda3479 \"cd /opt/tienda3479 && git pull -q && docker compose up -d --build\""
+    "deploy": "git push && ssh tienda3479 \"cd /opt/tienda3479 && git pull -q && docker compose build -q app && docker compose run --rm -T app node scripts/migrar.js && docker compose up -d app\""
   },
   "engines": {
     "node": ">=20"

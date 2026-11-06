@@ -7,10 +7,7 @@ const router = express.Router();
 
 async function buscarVenta(id) {
   const { rows } = await db.query(
-    `SELECT v.id, v.fecha, v.cliente_id, c.nombre AS cliente, c.nit_dpi
-       FROM ventas v
-       JOIN clientes c ON c.id = v.cliente_id
-      WHERE v.id = $1`,
+    'SELECT id, fecha, cliente_id, cliente, nit_dpi, total FROM vista_ventas WHERE id = $1',
     [id]
   );
   if (!rows.length) throw new ErrorApi(404, 'Venta no encontrada.');
@@ -24,8 +21,7 @@ async function buscarVenta(id) {
       ORDER BY p.nombre`,
     [id]
   );
-  const total = detalle.rows.reduce((suma, linea) => suma + linea.subtotal, 0);
-  return { ...rows[0], total, detalle: detalle.rows };
+  return { ...rows[0], detalle: detalle.rows };
 }
 
 // Valida el pedido y junta las líneas repetidas del mismo producto
@@ -48,16 +44,7 @@ function leerPedido(body = {}) {
 }
 
 router.get('/', async (req, res) => {
-  const { rows } = await db.query(
-    `SELECT v.id, v.fecha, c.nombre AS cliente,
-            COUNT(d.producto_id) AS productos,
-            COALESCE(SUM(d.cantidad * d.precio_unitario), 0) AS total
-       FROM ventas v
-       JOIN clientes c ON c.id = v.cliente_id
-       LEFT JOIN detalle_venta d ON d.venta_id = v.id
-      GROUP BY v.id, c.nombre
-      ORDER BY v.id DESC`
-  );
+  const { rows } = await db.query('SELECT id, fecha, cliente, productos, total FROM vista_ventas ORDER BY id DESC');
   res.json(rows);
 });
 
