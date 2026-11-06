@@ -1,8 +1,2 @@
 node_modules/
 .env
-wallet*/
-*.pem
-
-.vercel
-.env*
-!.env.example
