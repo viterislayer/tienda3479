@@ -3,21 +3,17 @@
 //      npm run db:init -- --vacia -> solo estructura
 // ATENCION: borra todos los datos. Para actualizar una base existente use npm run db:migrar
 require('dotenv').config({ quiet: true });
-const fs = require('fs');
 const path = require('path');
-const { conectar, migrar } = require('./migrar');
+const oracledb = require('oracledb');
+const { conectar, migrar, sentencias } = require('./migrar');
 
 async function borrarTodo(conexion) {
-  const [objetos] = await conexion.query(
-    `SELECT table_name AS nombre, table_type AS tipo
-       FROM information_schema.tables
-      WHERE table_schema = DATABASE()`
+  const { rows } = await conexion.execute(
+    `SELECT object_name, object_type FROM user_objects WHERE object_type IN ('VIEW', 'TABLE')`,
+    [], { outFormat: oracledb.OUT_FORMAT_ARRAY }
   );
-  await conexion.query('SET FOREIGN_KEY_CHECKS = 0');
-  for (const { nombre, tipo } of objetos) {
-    await conexion.query(`DROP ${tipo === 'VIEW' ? 'VIEW' : 'TABLE'} IF EXISTS \`${nombre}\``);
-  }
-  await conexion.query('SET FOREIGN_KEY_CHECKS = 1');
+  for (const [nombre, tipo] of rows.filter(([, t]) => t === 'VIEW')) await conexion.execute(`DROP VIEW "${nombre}"`);
+  for (const [nombre] of rows.filter(([, t]) => t === 'TABLE')) await conexion.execute(`DROP TABLE "${nombre}" CASCADE CONSTRAINTS PURGE`);
 }
 
 async function main() {
@@ -26,12 +22,13 @@ async function main() {
     await borrarTodo(conexion);
     await migrar(conexion);
     if (!process.argv.includes('--vacia')) {
-      await conexion.query(fs.readFileSync(path.join(__dirname, '..', 'sql', 'datos.sql'), 'utf8'));
+      for (const sentencia of sentencias(path.join(__dirname, '..', 'sql', 'datos.sql'))) await conexion.execute(sentencia);
+      await conexion.commit();
       console.log('datos.sql: cargado.');
     }
     console.log('Base inicializada.');
   } finally {
-    await conexion.end();
+    await conexion.close();
   }
 }
 

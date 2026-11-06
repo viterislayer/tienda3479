@@ -1,14 +1,8 @@
--- Crea la base de datos y el usuario de la tienda en MySQL.
--- Ejecutar una sola vez como administrador (root), indicando la contraseña del nuevo usuario:
---   mysql -u root -p --init-command="SET @clave='LA_CONTRASEÑA'" < sql/crear-base.sql
--- La misma contraseña va en DB_PASSWORD del archivo .env
+-- Crea el usuario (esquema) de la tienda en Oracle.
+-- Ejecutar una sola vez como administrador (SYSTEM) en la base FREEPDB1, por ejemplo en SQL Developer
+-- o con:  sql SYSTEM@localhost:1521/FREEPDB1 @sql/crear-base.sql
+-- Cambie LA_CONTRASEÑA por la contraseña que va en DB_PASSWORD del archivo .env
 
-CREATE DATABASE IF NOT EXISTS tienda3479 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-
-SET @crear = CONCAT('CREATE USER IF NOT EXISTS ''tienda3479''@''localhost'' IDENTIFIED BY ', QUOTE(@clave));
-PREPARE sentencia FROM @crear;
-EXECUTE sentencia;
-DEALLOCATE PREPARE sentencia;
-
-GRANT ALL PRIVILEGES ON tienda3479.* TO 'tienda3479'@'localhost';
-FLUSH PRIVILEGES;
+CREATE USER tienda3479 IDENTIFIED BY "LA_CONTRASEÑA" QUOTA UNLIMITED ON USERS;
+GRANT DB_DEVELOPER_ROLE TO tienda3479;
+GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE SEQUENCE TO tienda3479;

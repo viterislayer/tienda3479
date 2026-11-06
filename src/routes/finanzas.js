@@ -5,8 +5,9 @@ const { convertir } = require('../validacion');
 
 const router = express.Router();
 
-// Rango de fechas; si no se indica, va del primer día del mes a hoy (hora de Guatemala)
-const RANGO = `fecha BETWEEN COALESCE(?, DATE_FORMAT(CURDATE(), '%Y-%m-01')) AND COALESCE(?, CURDATE())`;
+// Rango de fechas; si no se indica, va del primer día del mes a hoy
+const RANGO = `fecha BETWEEN NVL(TO_DATE(:desde, 'YYYY-MM-DD'), TRUNC(SYSDATE, 'MM'))
+                         AND NVL(TO_DATE(:hasta, 'YYYY-MM-DD'), TRUNC(SYSDATE))`;
 
 router.get('/movimientos', async (req, res) => {
   const desde = convertir('desde', 'fecha', req.query.desde);
@@ -15,19 +16,19 @@ router.get('/movimientos', async (req, res) => {
 
   const [movimientos, totales] = await Promise.all([
     db.query(
-      `SELECT tipo, origen, referencia, fecha, concepto, monto
+      `SELECT tipo, origen, referencia, TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha, concepto, monto
          FROM vista_movimientos
         WHERE ${RANGO}
-        ORDER BY fecha DESC, tipo, referencia DESC`,
-      [desde, hasta]
+        ORDER BY vista_movimientos.fecha DESC, tipo, referencia DESC`,
+      { desde, hasta }
     ),
     db.query(
-      `SELECT COALESCE(SUM(CASE WHEN tipo = 'Ingreso' THEN monto END), 0) AS ingresos,
-              COALESCE(SUM(CASE WHEN origen = 'Compra' THEN monto END), 0) AS compras,
-              COALESCE(SUM(CASE WHEN origen = 'Gasto' THEN monto END), 0) AS gastos
+      `SELECT NVL(SUM(CASE WHEN tipo = 'Ingreso' THEN monto END), 0) AS ingresos,
+              NVL(SUM(CASE WHEN origen = 'Compra' THEN monto END), 0) AS compras,
+              NVL(SUM(CASE WHEN origen = 'Gasto' THEN monto END), 0) AS gastos
          FROM vista_movimientos
         WHERE ${RANGO}`,
-      [desde, hasta]
+      { desde, hasta }
     ),
   ]);
 
@@ -41,10 +42,10 @@ router.get('/movimientos', async (req, res) => {
 // Balance de los últimos 12 meses con movimientos
 router.get('/balance-mensual', async (req, res) => {
   const { rows } = await db.query(
-    `SELECT DATE_FORMAT(mes, '%Y-%m') AS mes, ingresos, egresos, balance
+    `SELECT TO_CHAR(mes, 'YYYY-MM') AS mes, ingresos, egresos, balance
        FROM vista_balance_mensual
-      ORDER BY mes DESC
-      LIMIT 12`
+      ORDER BY vista_balance_mensual.mes DESC
+      FETCH FIRST 12 ROWS ONLY`
   );
   res.json(rows);
 });

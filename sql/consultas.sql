@@ -1,5 +1,5 @@
--- Consultas para revisar la base de datos de la Tienda 3479 (MySQL)
--- Abra este archivo en MySQL Workbench y ejecute una consulta (Ctrl+Enter) o todas (Ctrl+Shift+Enter).
+-- Consultas para revisar la base de datos de la Tienda 3479 (Oracle)
+-- Abra este archivo en SQL Developer: Ctrl+Enter ejecuta la consulta donde está el cursor, F5 ejecuta todo.
 
 -- 1. Tablas de la base y cuántos registros tiene cada una
 SELECT 'categorias' AS tabla, COUNT(*) AS registros FROM categorias
@@ -26,33 +26,37 @@ SELECT * FROM vista_movimientos ORDER BY fecha DESC;
 SELECT * FROM vista_balance_mensual ORDER BY mes DESC;
 
 -- 5. Estructura: columnas, tipos y si aceptan nulos
-SELECT table_name AS tabla, column_name AS columna, column_type AS tipo, is_nullable AS acepta_nulo, column_comment AS comentario
-  FROM information_schema.columns
- WHERE table_schema = DATABASE()
- ORDER BY table_name, ordinal_position;
+SELECT table_name AS tabla, column_name AS columna, data_type AS tipo, nullable AS acepta_nulo
+  FROM user_tab_columns
+ ORDER BY table_name, column_id;
 
 -- 6. Relaciones (llaves foráneas)
-SELECT table_name AS tabla, column_name AS columna,
-       referenced_table_name AS referencia_a, referenced_column_name AS columna_referida, constraint_name AS restriccion
-  FROM information_schema.key_column_usage
- WHERE table_schema = DATABASE() AND referenced_table_name IS NOT NULL
+SELECT c.table_name AS tabla, cc.column_name AS columna, r.table_name AS referencia_a, c.constraint_name AS restriccion
+  FROM user_constraints c
+  JOIN user_cons_columns cc ON cc.constraint_name = c.constraint_name
+  JOIN user_constraints r ON r.constraint_name = c.r_constraint_name
+ WHERE c.constraint_type = 'R'
+ ORDER BY c.table_name;
+
+-- 7. Reglas CHECK de calidad de datos (sin las NOT NULL automáticas)
+SELECT table_name AS tabla, constraint_name AS regla, search_condition_vc AS condicion
+  FROM user_constraints
+ WHERE constraint_type = 'C' AND constraint_name LIKE 'CK\_%' ESCAPE '\'
  ORDER BY table_name;
 
--- 7. Reglas CHECK de calidad de datos
-SELECT tc.table_name AS tabla, cc.constraint_name AS regla, cc.check_clause AS condicion
-  FROM information_schema.check_constraints cc
-  JOIN information_schema.table_constraints tc
-    ON tc.constraint_schema = cc.constraint_schema AND tc.constraint_name = cc.constraint_name
- WHERE cc.constraint_schema = DATABASE()
- ORDER BY tc.table_name;
+-- 8. Comentarios de tablas y vistas
+SELECT table_name AS objeto, table_type AS tipo, comments AS comentario
+  FROM user_tab_comments
+ WHERE comments IS NOT NULL
+ ORDER BY table_type, table_name;
 
--- 8. Productos con su categoría (JOIN)
+-- 9. Productos con su categoría (JOIN)
 SELECT p.id, p.nombre, p.precio, p.stock, c.nombre AS categoria
   FROM productos p
   JOIN categorias c ON c.id = p.categoria_id
  ORDER BY p.nombre;
 
--- 9. Detalle de cada venta: qué se vendió, a quién y a qué precio
+-- 10. Detalle de cada venta: qué se vendió, a quién y a qué precio
 SELECT d.venta_id, v.fecha, c.nombre AS cliente, p.nombre AS producto,
        d.cantidad, d.precio_unitario, d.cantidad * d.precio_unitario AS subtotal
   FROM detalle_venta d

@@ -1,44 +1,53 @@
 // Aplica en orden las migraciones de sql/migraciones que aún no se han aplicado
 // y las registra en la tabla schema_migraciones.
 // Uso: npm run db:migrar
-// Nota: en MySQL los CREATE/ALTER se confirman solos, por eso cada archivo se registra apenas termina.
+// Nota: en Oracle los CREATE/ALTER se confirman solos, por eso cada archivo se registra apenas termina.
 require('dotenv').config({ quiet: true });
 const fs = require('fs');
 const path = require('path');
-const mysql = require('mysql2/promise');
-const { configuracion, ZONA } = require('../src/db');
+const oracledb = require('oracledb');
+const { configuracion } = require('../src/db');
 
 const CARPETA = path.join(__dirname, '..', 'sql', 'migraciones');
 
+// Oracle ejecuta una sentencia a la vez: se separa el archivo por ';' al final de línea
+function sentencias(archivo) {
+  return fs.readFileSync(archivo, 'utf8')
+    .split(/;\s*$/m)
+    .map(s => s.replace(/^\s*--.*$/gm, '').trim())
+    .filter(Boolean);
+}
+
 function conectar() {
-  return mysql.createConnection({ ...configuracion, multipleStatements: true });
+  return oracledb.getConnection(configuracion);
 }
 
 async function migrar(conexion) {
-  await conexion.query(`SET time_zone = '${ZONA}'`);
-  await conexion.query(`
+  await conexion.execute(`
     CREATE TABLE IF NOT EXISTS schema_migraciones (
-      version     VARCHAR(100) PRIMARY KEY,
-      aplicada_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    ) COMMENT = 'Migraciones de estructura ya aplicadas'`);
+      version     VARCHAR2(100) PRIMARY KEY,
+      aplicada_en DATE DEFAULT SYSDATE NOT NULL
+    )`);
 
-  const [filas] = await conexion.query('SELECT version FROM schema_migraciones');
-  const aplicadas = new Set(filas.map(f => f.version));
+  const { rows } = await conexion.execute('SELECT version FROM schema_migraciones', [], { outFormat: oracledb.OUT_FORMAT_ARRAY });
+  const aplicadas = new Set(rows.map(([version]) => version));
   const pendientes = fs.readdirSync(CARPETA).filter(f => f.endsWith('.sql')).sort().filter(f => !aplicadas.has(f));
 
   for (const archivo of pendientes) {
-    try {
-      await conexion.query(fs.readFileSync(path.join(CARPETA, archivo), 'utf8'));
-    } catch (err) {
-      throw new Error(`${archivo}: ${err.message}`);
+    for (const sentencia of sentencias(path.join(CARPETA, archivo))) {
+      try {
+        await conexion.execute(sentencia);
+      } catch (err) {
+        throw new Error(`${archivo}: ${err.message}\n${sentencia.slice(0, 120)}`);
+      }
     }
-    await conexion.query('INSERT INTO schema_migraciones (version) VALUES (?)', [archivo]);
+    await conexion.execute('INSERT INTO schema_migraciones (version) VALUES (:v)', { v: archivo }, { autoCommit: true });
     console.log(`${archivo}: aplicada.`);
   }
   if (!pendientes.length) console.log('La base ya está al día.');
 }
 
-module.exports = { conectar, migrar };
+module.exports = { conectar, migrar, sentencias };
 
 if (require.main === module) {
   (async () => {
@@ -46,7 +55,7 @@ if (require.main === module) {
     try {
       await migrar(conexion);
     } finally {
-      await conexion.end();
+      await conexion.close();
     }
   })().catch(err => {
     console.error('Error en la migración:', err.message);

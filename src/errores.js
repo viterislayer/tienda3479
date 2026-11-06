@@ -30,27 +30,27 @@ const RESTRICCIONES = {
   ck_detalle_compra_costo: [400, 'El costo no puede ser negativo.'],
 };
 
-// Códigos de error de MySQL más comunes
-const ERRORES_MYSQL = {
-  1048: [400, 'Falta un campo obligatorio.'],
-  1062: [409, 'Ya existe un registro con ese valor (dato duplicado).'],
-  1264: [400, 'Un número es demasiado grande.'],
-  1292: [400, 'Un valor no tiene el formato correcto.'],
-  1366: [400, 'Un valor no tiene el formato correcto.'],
-  1406: [400, 'Un texto es demasiado largo.'],
-  1451: [409, 'No se puede eliminar porque tiene registros relacionados.'],
-  1452: [400, 'El registro relacionado no existe.'],
-  3819: [400, 'Un valor no cumple las reglas de la base de datos.'],
+// Códigos ORA más comunes
+const ERRORES_ORACLE = {
+  1: [409, 'Ya existe un registro con ese valor (dato duplicado).'],
+  1400: [400, 'Falta un campo obligatorio.'],
+  1438: [400, 'Un número es demasiado grande.'],
+  1722: [400, 'Un valor no tiene el formato correcto.'],
+  1841: [400, 'La fecha no es válida.'],
+  1861: [400, 'La fecha no es válida.'],
+  2290: [400, 'Un valor no cumple las reglas de la base de datos.'],
+  2291: [400, 'El registro relacionado no existe.'],
+  2292: [409, 'No se puede eliminar porque tiene registros relacionados.'],
+  12899: [400, 'Un texto es demasiado largo.'],
 };
 
-// Nombre de la restricción que falló, sacado del mensaje de MySQL:
-//   1062: "Duplicate entry 'x' for key 'clientes.uq_clientes_correo'"
-//   3819: "Check constraint 'ck_productos_stock' is violated."
+// Nombre de la restricción que falló, sacado del mensaje de Oracle:
+//   ORA-00001: unique constraint (TIENDA3479.UQ_CLIENTES_CORREO) violated
+//   ORA-02290: check constraint (TIENDA3479.CK_PRODUCTOS_STOCK) violated
 function restriccion(err) {
-  const coincidencia = err.errno === 1062
-    ? /for key '(?:[^.']+\.)?([^']+)'/.exec(err.sqlMessage || '')
-    : err.errno === 3819 ? /constraint '([^']+)'/.exec(err.sqlMessage || '') : null;
-  return coincidencia ? coincidencia[1] : null;
+  if (err.errorNum !== 1 && err.errorNum !== 2290) return null;
+  const coincidencia = /\((?:[^.()]+\.)?([^()]+)\)/.exec(err.message || '');
+  return coincidencia ? coincidencia[1].toLowerCase() : null;
 }
 
 function manejarErrores(err, req, res, next) {
@@ -60,7 +60,7 @@ function manejarErrores(err, req, res, next) {
   const especifico = RESTRICCIONES[restriccion(err)];
   if (especifico) return res.status(especifico[0]).json({ error: especifico[1] });
 
-  const conocido = ERRORES_MYSQL[err.errno];
+  const conocido = ERRORES_ORACLE[err.errorNum];
   if (conocido) return res.status(conocido[0]).json({ error: conocido[1] });
 
   console.error(err);

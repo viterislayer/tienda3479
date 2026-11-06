@@ -7,8 +7,8 @@ const router = express.Router();
 
 async function buscarVenta(id) {
   const { rows } = await db.query(
-    'SELECT id, fecha, cliente_id, cliente, nit_dpi, total FROM vista_ventas WHERE id = ?',
-    [id]
+    'SELECT id, fecha, cliente_id, cliente, nit_dpi, total FROM vista_ventas WHERE id = :id',
+    { id }
   );
   if (!rows.length) throw new ErrorApi(404, 'Venta no encontrada.');
 
@@ -17,9 +17,9 @@ async function buscarVenta(id) {
             d.cantidad * d.precio_unitario AS subtotal
        FROM detalle_venta d
        JOIN productos p ON p.id = d.producto_id
-      WHERE d.venta_id = ?
+      WHERE d.venta_id = :id
       ORDER BY p.nombre`,
-    [id]
+    { id }
   );
   return { ...rows[0], detalle: detalle.rows };
 }
@@ -57,11 +57,15 @@ router.post('/', async (req, res) => {
   const { clienteId, cantidades } = leerPedido(req.body);
 
   const ventaId = await db.transaccion(async ejecutar => {
-    const { insertId: id } = await ejecutar('INSERT INTO ventas (cliente_id) VALUES (?)', [clienteId]);
+    const { outBinds } = await ejecutar(
+      'INSERT INTO ventas (cliente_id) VALUES (:cliente_id) RETURNING id INTO :nuevo_id',
+      { cliente_id: clienteId, nuevo_id: db.ID_SALIDA }
+    );
+    const id = outBinds.nuevo_id[0];
 
     for (const [productoId, cantidad] of cantidades) {
       // FOR UPDATE bloquea el producto para que dos ventas no vendan el mismo stock a la vez
-      const { rows } = await ejecutar('SELECT nombre, precio, stock FROM productos WHERE id = ? FOR UPDATE', [productoId]);
+      const { rows } = await ejecutar('SELECT nombre, precio, stock FROM productos WHERE id = :id FOR UPDATE', { id: productoId });
       if (!rows.length) throw new ErrorApi(400, `El producto ${productoId} no existe.`);
       const producto = rows[0];
       if (producto.stock < cantidad) {
@@ -69,10 +73,11 @@ router.post('/', async (req, res) => {
       }
 
       await ejecutar(
-        'INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
-        [id, productoId, cantidad, producto.precio]
+        `INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario)
+         VALUES (:venta_id, :producto_id, :cantidad, :precio)`,
+        { venta_id: id, producto_id: productoId, cantidad, precio: producto.precio }
       );
-      await ejecutar('UPDATE productos SET stock = stock - ? WHERE id = ?', [cantidad, productoId]);
+      await ejecutar('UPDATE productos SET stock = stock - :cantidad WHERE id = :id', { cantidad, id: productoId });
     }
     return id;
   });
@@ -87,12 +92,12 @@ router.delete('/:id', async (req, res) => {
   await db.transaccion(async ejecutar => {
     await ejecutar(
       `UPDATE productos p
-         JOIN detalle_venta d ON d.producto_id = p.id
-          SET p.stock = p.stock + d.cantidad
-        WHERE d.venta_id = ?`,
-      [id]
+          SET stock = stock + (SELECT d.cantidad FROM detalle_venta d
+                                WHERE d.venta_id = :id AND d.producto_id = p.id)
+        WHERE p.id IN (SELECT producto_id FROM detalle_venta WHERE venta_id = :id)`,
+      { id }
     );
-    const { rowCount } = await ejecutar('DELETE FROM ventas WHERE id = ?', [id]);
+    const { rowCount } = await ejecutar('DELETE FROM ventas WHERE id = :id', { id });
     if (!rowCount) throw new ErrorApi(404, 'Venta no encontrada.');
   });
 

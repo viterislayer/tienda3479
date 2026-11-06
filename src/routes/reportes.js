@@ -4,54 +4,50 @@ const db = require('../db');
 const router = express.Router();
 const DIAS_GRAFICA = 14;
 const STOCK_BAJO = 3;
-// Las conexiones trabajan en hora de Guatemala, así que CURDATE() y DATE(fecha) ya son días de Guatemala
-const INICIO_MES = `DATE_FORMAT(CURDATE(), '%Y-%m-01')`;
+// El servidor de Oracle está en hora de Guatemala, así que SYSDATE y TRUNC(fecha) ya son días de Guatemala
+const HOY = 'TRUNC(SYSDATE)';
+const INICIO_MES = `TRUNC(SYSDATE, 'MM')`;
 
 // Cantidad de ventas y monto vendido a partir de un día (o de todo el historial)
 async function totalesDesde(desde) {
   const { rows } = await db.query(
     `SELECT COUNT(DISTINCT v.id) AS cantidad,
-            COALESCE(SUM(d.cantidad * d.precio_unitario), 0) AS total
+            NVL(SUM(d.cantidad * d.precio_unitario), 0) AS total
        FROM ventas v
        JOIN detalle_venta d ON d.venta_id = v.id
-      WHERE ${desde ? `DATE(v.fecha) >= ${desde}` : 'TRUE'}`
+      WHERE ${desde ? `TRUNC(v.fecha) >= ${desde}` : '1 = 1'}`
   );
   return rows[0];
 }
 
 router.get('/resumen', async (req, res) => {
   const [hoy, mes, total, egresosMes, stock, porDia, topProductos, porCategoria, topClientes] = await Promise.all([
-    totalesDesde('CURDATE()'),
+    totalesDesde(HOY),
     totalesDesde(INICIO_MES),
     totalesDesde(null),
     db.query(
-      `SELECT COALESCE(SUM(CASE WHEN origen = 'Compra' THEN monto END), 0) AS compras,
-              COALESCE(SUM(CASE WHEN origen = 'Gasto' THEN monto END), 0) AS gastos
+      `SELECT NVL(SUM(CASE WHEN origen = 'Compra' THEN monto END), 0) AS compras,
+              NVL(SUM(CASE WHEN origen = 'Gasto' THEN monto END), 0) AS gastos
          FROM vista_movimientos
         WHERE tipo = 'Egreso' AND fecha >= ${INICIO_MES}`
     ),
     db.query(
       `SELECT COUNT(CASE WHEN stock = 0 THEN 1 END) AS agotados,
-              COUNT(CASE WHEN stock BETWEEN 1 AND ? THEN 1 END) AS bajos
+              COUNT(CASE WHEN stock BETWEEN 1 AND :bajo THEN 1 END) AS bajos
          FROM productos`,
-      [STOCK_BAJO]
+      { bajo: STOCK_BAJO }
     ),
-    // WITH RECURSIVE genera los 14 días aunque no haya ventas; el LEFT JOIN los deja en 0
+    // CONNECT BY LEVEL genera los 14 días aunque no haya ventas; el LEFT JOIN los deja en 0
     db.query(
-      `WITH RECURSIVE dias (dia) AS (
-         SELECT CURDATE() - INTERVAL ? DAY
-         UNION ALL
-         SELECT dia + INTERVAL 1 DAY FROM dias WHERE dia < CURDATE()
-       )
-       SELECT DATE_FORMAT(dias.dia, '%Y-%m-%d') AS dia,
+      `SELECT TO_CHAR(dias.dia, 'YYYY-MM-DD') AS dia,
               COUNT(DISTINCT v.id) AS cantidad,
-              COALESCE(SUM(d.cantidad * d.precio_unitario), 0) AS total
-         FROM dias
-         LEFT JOIN ventas v ON DATE(v.fecha) = dias.dia
+              NVL(SUM(d.cantidad * d.precio_unitario), 0) AS total
+         FROM (SELECT ${HOY} - (LEVEL - 1) AS dia FROM DUAL CONNECT BY LEVEL <= :dias) dias
+         LEFT JOIN ventas v ON TRUNC(v.fecha) = dias.dia
          LEFT JOIN detalle_venta d ON d.venta_id = v.id
         GROUP BY dias.dia
         ORDER BY dias.dia`,
-      [DIAS_GRAFICA - 1]
+      { dias: DIAS_GRAFICA }
     ),
     db.query(
       `SELECT p.nombre AS producto, SUM(d.cantidad) AS unidades, SUM(d.cantidad * d.precio_unitario) AS total
@@ -59,7 +55,7 @@ router.get('/resumen', async (req, res) => {
          JOIN productos p ON p.id = d.producto_id
         GROUP BY p.id, p.nombre
         ORDER BY total DESC
-        LIMIT 5`
+        FETCH FIRST 5 ROWS ONLY`
     ),
     db.query(
       `SELECT c.nombre AS categoria, SUM(d.cantidad * d.precio_unitario) AS total
@@ -76,7 +72,7 @@ router.get('/resumen', async (req, res) => {
          JOIN detalle_venta d ON d.venta_id = v.id
         GROUP BY cl.id, cl.nombre
         ORDER BY total DESC
-        LIMIT 5`
+        FETCH FIRST 5 ROWS ONLY`
     ),
   ]);
 

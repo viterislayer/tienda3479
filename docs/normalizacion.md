@@ -100,7 +100,7 @@ TIPOS_GASTO (id PK, nombre UNIQUE)
 - Una venta tiene muchos productos y un producto aparece en muchas ventas (N:M). **DETALLE_VENTA** resuelve esa relación.
 
 **Reglas de integridad** (`sql/migraciones/`):
-- Llaves primarias `AUTO_INCREMENT` (MySQL genera el id).
+- Llaves primarias `IDENTITY` (Oracle genera el id).
 - Índices en las llaves foráneas y en la fecha de venta para acelerar los JOIN y los reportes.
 - Llaves foráneas: no se puede vender a un cliente ni un producto que no existe.
 - `UNIQUE` en el nombre de categoría, en el NIT/DPI y en el correo.

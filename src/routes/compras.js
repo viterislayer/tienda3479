@@ -7,8 +7,8 @@ const router = express.Router();
 
 async function buscarCompra(id) {
   const { rows } = await db.query(
-    'SELECT id, fecha, proveedor_id, proveedor, nit, total FROM vista_compras WHERE id = ?',
-    [id]
+    'SELECT id, fecha, proveedor_id, proveedor, nit, total FROM vista_compras WHERE id = :id',
+    { id }
   );
   if (!rows.length) throw new ErrorApi(404, 'Compra no encontrada.');
 
@@ -17,9 +17,9 @@ async function buscarCompra(id) {
             d.cantidad * d.costo_unitario AS subtotal
        FROM detalle_compra d
        JOIN productos p ON p.id = d.producto_id
-      WHERE d.compra_id = ?
+      WHERE d.compra_id = :id
       ORDER BY p.nombre`,
-    [id]
+    { id }
   );
   return { ...rows[0], detalle: detalle.rows };
 }
@@ -64,14 +64,19 @@ router.post('/', async (req, res) => {
   const { proveedorId, lineas } = leerCompra(req.body);
 
   const compraId = await db.transaccion(async ejecutar => {
-    const { insertId: id } = await ejecutar('INSERT INTO compras (proveedor_id) VALUES (?)', [proveedorId]);
+    const { outBinds } = await ejecutar(
+      'INSERT INTO compras (proveedor_id) VALUES (:proveedor_id) RETURNING id INTO :nuevo_id',
+      { proveedor_id: proveedorId, nuevo_id: db.ID_SALIDA }
+    );
+    const id = outBinds.nuevo_id[0];
 
     for (const [productoId, { cantidad, costo }] of lineas) {
-      const { rowCount } = await ejecutar('UPDATE productos SET stock = stock + ? WHERE id = ?', [cantidad, productoId]);
+      const { rowCount } = await ejecutar('UPDATE productos SET stock = stock + :cantidad WHERE id = :id', { cantidad, id: productoId });
       if (!rowCount) throw new ErrorApi(400, `El producto ${productoId} no existe.`);
       await ejecutar(
-        'INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario) VALUES (?, ?, ?, ?)',
-        [id, productoId, cantidad, costo]
+        `INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario)
+         VALUES (:compra_id, :producto_id, :cantidad, :costo)`,
+        { compra_id: id, producto_id: productoId, cantidad, costo }
       );
     }
     return id;
@@ -88,12 +93,12 @@ router.delete('/:id', async (req, res) => {
     await db.transaccion(async ejecutar => {
       await ejecutar(
         `UPDATE productos p
-           JOIN detalle_compra d ON d.producto_id = p.id
-            SET p.stock = p.stock - d.cantidad
-          WHERE d.compra_id = ?`,
-        [id]
+            SET stock = stock - (SELECT d.cantidad FROM detalle_compra d
+                                  WHERE d.compra_id = :id AND d.producto_id = p.id)
+          WHERE p.id IN (SELECT producto_id FROM detalle_compra WHERE compra_id = :id)`,
+        { id }
       );
-      const { rowCount } = await ejecutar('DELETE FROM compras WHERE id = ?', [id]);
+      const { rowCount } = await ejecutar('DELETE FROM compras WHERE id = :id', { id });
       if (!rowCount) throw new ErrorApi(404, 'Compra no encontrada.');
     });
   } catch (err) {

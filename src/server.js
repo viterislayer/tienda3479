@@ -24,7 +24,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/api/estado', async (req, res) => {
-  const { rows } = await db.query('SELECT CURRENT_USER() AS usuario, DATABASE() AS base');
+  const { rows } = await db.query(`SELECT USER AS usuario, SYS_CONTEXT('USERENV', 'CON_NAME') AS base FROM DUAL`);
   res.json({ conectado: true, ...rows[0] });
 });
 
@@ -71,7 +71,7 @@ app.use('/api/gastos', crearCrud({
   tabla: 'gastos',
   campos: { fecha: 'fecha', tipo_gasto_id: 'entero', descripcion: 'texto', monto: 'numero' },
   requeridos: ['fecha', 'tipo_gasto_id', 'descripcion', 'monto'],
-  consulta: `SELECT g.id, g.fecha, g.tipo_gasto_id, t.nombre AS tipo_gasto, g.descripcion, g.monto
+  consulta: `SELECT g.id, TO_CHAR(g.fecha, 'YYYY-MM-DD') AS fecha, g.tipo_gasto_id, t.nombre AS tipo_gasto, g.descripcion, g.monto
                FROM gastos g
                JOIN tipos_gasto t ON t.id = g.tipo_gasto_id`,
   columnaId: 'g.id',
@@ -95,7 +95,7 @@ db.init()
     app.listen(port, () => console.log(`Servidor listo en http://localhost:${port}`));
   })
   .catch(err => {
-    console.error('No se pudo conectar a MySQL:', err.message);
+    console.error('No se pudo conectar a Oracle:', err.message);
     process.exit(1);
   });
 
