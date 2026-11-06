@@ -1,22 +1,4 @@
 services:
-  oracle:
-    image: gvenzl/oracle-free:23-slim
-    restart: unless-stopped
-    environment:
-      ORACLE_PASSWORD: ${ORACLE_ADMIN_PASSWORD}
-      APP_USER: ${DB_USER}
-      APP_USER_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "1521:1521"
-    volumes:
-      - oracle-data:/opt/oracle/oradata
-    healthcheck:
-      test: ["CMD", "healthcheck.sh"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 60s
-
   app:
     build: .
     restart: unless-stopped
@@ -25,26 +7,11 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_CONNECT_STRING: oracle:1521/FREEPDB1
       PORT: 3000
-    depends_on:
-      oracle:
-        condition: service_healthy
+    networks:
+      web:
+        aliases:
+          - tienda3479
 
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      DOMAIN: ${DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - app
-
-volumes:
-  oracle-data:
-  caddy-data:
-  caddy-config:
+networks:
+  web:
+    external: true

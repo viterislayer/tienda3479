@@ -24,13 +24,11 @@ npm start
 
 ## Producción
 
-Servidor VPS (Ubuntu 24.04) con Docker Compose:
+Servidor VPS (Ubuntu 24.04) con Docker Compose. La app corre en `/opt/tienda3479` y usa la
+infraestructura compartida del servidor (`/opt/infra`): Oracle 23ai Free (`oracle:1521`) y HTTPS con Caddy,
+conectados por la red Docker `web`.
 
-- `oracle`: Oracle 23ai Free (puerto 1521)
-- `app`: servidor Node.js
-- `caddy`: HTTPS automático (puertos 80 y 443)
-
-En el servidor, `/opt/tienda3479/.env` define `DB_USER`, `DB_PASSWORD`, `ORACLE_ADMIN_PASSWORD` y `DOMAIN`.
+En el servidor, `/opt/tienda3479/.env` define `DB_USER` y `DB_PASSWORD`.
 
 Publicar cambios:
 
@@ -42,8 +40,7 @@ npm run deploy
 
 ```
 Dockerfile         Imagen de la app Node.js
-docker-compose.yml Servicios de producción (Oracle, app, HTTPS)
-Caddyfile          Configuración de HTTPS
+docker-compose.yml Servicio de producción de la app
 .env.example       Plantilla de credenciales (copiar como .env)
 sql/schema.sql     Creación de tablas y datos de ejemplo
 src/db.js          Pool de conexiones a Oracle
