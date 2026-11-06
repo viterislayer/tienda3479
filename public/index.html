@@ -17,21 +17,21 @@
         </div>
       </div>
 
-      <nav id="pestanas">
-        <button data-vista="ventas" class="activa">
-          <svg viewBox="0 0 24 24"><path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.8h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>
+      <nav id="pestanas" aria-label="Secciones">
+        <button data-vista="ventas" class="activa" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.8h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>
           Ventas
         </button>
         <button data-vista="productos">
-          <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
           Productos
         </button>
         <button data-vista="categorias">
-          <svg viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
           Categorías
         </button>
         <button data-vista="clientes">
-          <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-5-6.7"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-5-6.7"/></svg>
           Clientes
         </button>
       </nav>
@@ -84,7 +84,7 @@
             <div class="tabla-contenedor">
               <table class="tabla compacta">
                 <thead>
-                  <tr><th>Producto</th><th class="num">Cant.</th><th class="num">Subtotal</th><th></th></tr>
+                  <tr><th>Producto</th><th class="num">Cant.</th><th class="num">Subtotal</th><th><span class="sr-only">Acciones</span></th></tr>
                 </thead>
                 <tbody id="venta-lineas"></tbody>
               </table>
@@ -102,7 +102,7 @@
           <div class="tabla-contenedor">
             <table class="tabla">
               <thead>
-                <tr><th>#</th><th>Fecha</th><th>Cliente</th><th class="num">Productos</th><th class="num">Total</th><th></th></tr>
+                <tr><th>#</th><th>Fecha</th><th>Cliente</th><th class="num">Productos</th><th class="num">Total</th><th><span class="sr-only">Acciones</span></th></tr>
               </thead>
               <tbody id="ventas-lista"></tbody>
             </table>
@@ -141,7 +141,7 @@
     </form>
   </dialog>
 
-  <div id="aviso" class="aviso" hidden></div>
+  <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
 
   <script type="module" src="js/app.js"></script>
 </body>

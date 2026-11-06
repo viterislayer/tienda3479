@@ -30,11 +30,16 @@ export const STOCK_BAJO = 3;
 
 export function insigniaStock(stock) {
   const tipo = stock === 0 ? 'peligro' : stock <= STOCK_BAJO ? 'alerta' : 'ok';
-  return `<span class="insignia ${tipo}">${stock}</span>`;
+  const texto = stock === 0 ? 'Agotado' : stock <= STOCK_BAJO ? `${stock} · Bajo` : stock;
+  return `<span class="insignia ${tipo}">${texto}</span>`;
 }
 
 export function filaVacia(columnas, mensaje) {
   return `<tr><td colspan="${columnas}" class="vacio">${escapar(mensaje)}</td></tr>`;
+}
+
+export function filaCargando(columnas) {
+  return `<tr><td colspan="${columnas}" class="vacio cargando">Cargando...</td></tr>`;
 }
 
 export function fecha(valor) {

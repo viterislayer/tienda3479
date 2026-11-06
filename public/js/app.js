@@ -29,7 +29,11 @@ async function verificarEstado() {
 async function mostrarVista(nombre) {
   if (!VISTAS[nombre]) nombre = 'ventas';
   history.replaceState(null, '', `#${nombre}`);
-  document.querySelectorAll('#pestanas button').forEach(b => b.classList.toggle('activa', b.dataset.vista === nombre));
+  document.querySelectorAll('#pestanas button').forEach(b => {
+    const activa = b.dataset.vista === nombre;
+    b.classList.toggle('activa', activa);
+    activa ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current');
+  });
   [$('titulo').textContent, $('subtitulo').textContent] = VISTAS[nombre];
   $('vista-ventas').hidden = nombre !== 'ventas';
   $('vista-crud').hidden = nombre === 'ventas';

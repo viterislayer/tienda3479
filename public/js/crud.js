@@ -1,4 +1,4 @@
-import { api, $, escapar, moneda, aviso, opcionesSelect, insigniaStock, filaVacia } from './comun.js';
+import { api, $, escapar, moneda, aviso, opcionesSelect, insigniaStock, filaVacia, filaCargando } from './comun.js';
 
 // Configuración de cada tabla administrable desde la página
 export const TABLAS = {
@@ -72,7 +72,8 @@ function limpiar() {
 async function cargar() {
   const columnas = config.campos.length + 2;
   $('crud-cabecera').innerHTML = `<tr><th>#</th>${config.campos
-    .map(c => `<th class="${c.num ? 'num' : ''}">${c.etiqueta}</th>`).join('')}<th></th></tr>`;
+    .map(c => `<th class="${c.num ? 'num' : ''}">${c.etiqueta}</th>`).join('')}<th><span class="sr-only">Acciones</span></th></tr>`;
+  $('crud-filas').innerHTML = filaCargando(columnas);
   try {
     filas = await api(config.ruta);
     $('crud-filas').innerHTML = filas.length

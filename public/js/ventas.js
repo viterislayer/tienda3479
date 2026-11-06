@@ -1,4 +1,4 @@
-import { api, $, escapar, moneda, fecha, aviso, opcionesSelect, filaVacia, STOCK_BAJO } from './comun.js';
+import { api, $, escapar, moneda, fecha, aviso, opcionesSelect, filaVacia, filaCargando, STOCK_BAJO } from './comun.js';
 
 let productos = [];
 let lineas = []; // { producto_id, nombre, precio, cantidad }
@@ -127,6 +127,7 @@ async function anular(id) {
 }
 
 export async function mostrarVentas() {
+  if (!$('ventas-lista').children.length) $('ventas-lista').innerHTML = filaCargando(6);
   const [clientes, listaProductos, ventas] = await Promise.all([
     api('/api/clientes'), api('/api/productos'), api('/api/ventas'),
   ]);
