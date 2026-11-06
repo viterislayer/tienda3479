@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tienda 3479</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Tienda 3479</h1>
+    <span id="estado" class="estado">Conectando...</span>
+  </header>
+
+  <nav>
+    <button class="tab activa" data-tabla="productos">Productos</button>
+    <button class="tab" data-tabla="clientes">Clientes</button>
+  </nav>
+
+  <main>
+    <form id="formulario">
+      <h2 id="tituloForm">Nuevo producto</h2>
+      <div id="campos"></div>
+      <div class="acciones">
+        <button type="submit">Guardar</button>
+        <button type="button" id="btnCancelar" class="secundario" hidden>Cancelar</button>
+      </div>
+    </form>
+
+    <table>
+      <thead id="cabecera"></thead>
+      <tbody id="filas"></tbody>
+    </table>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

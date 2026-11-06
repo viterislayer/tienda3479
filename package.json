@@ -1,0 +1,16 @@
+{
+  "name": "tienda3479",
+  "version": "1.0.0",
+  "description": "Pagina web conectada a la base Oracle DB_TIENDA3479",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "oracledb": "^26.0.0"
+  }
+}

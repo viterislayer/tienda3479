@@ -1,0 +1,32 @@
+### Estado de la conexion
+GET http://localhost:3000/api/estado
+
+### Listar productos
+GET http://localhost:3000/api/productos
+
+### Obtener un producto
+GET http://localhost:3000/api/productos/1
+
+### Crear producto
+POST http://localhost:3000/api/productos
+Content-Type: application/json
+
+{ "NOMBRE": "Producto de prueba", "PRECIO": 10.50, "STOCK": 5 }
+
+### Actualizar producto
+PUT http://localhost:3000/api/productos/1
+Content-Type: application/json
+
+{ "NOMBRE": "Producto editado", "PRECIO": 12, "STOCK": 8 }
+
+### Eliminar producto
+DELETE http://localhost:3000/api/productos/99
+
+### Listar clientes
+GET http://localhost:3000/api/clientes
+
+### Crear cliente
+POST http://localhost:3000/api/clientes
+Content-Type: application/json
+
+{ "NOMBRE": "Cliente de prueba", "NIT_DPI": "1234567-8", "CORREO": "cliente@correo.com" }
