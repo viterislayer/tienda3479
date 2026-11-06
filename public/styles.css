@@ -277,3 +277,21 @@ nav button:focus-visible { outline-color: rgba(255, 255, 255, .5); }
   .pie-barra { margin-top: 0; flex-direction: row; align-items: center; }
   .version { display: none; }
 }
+
+/* ---------- Menos carga visual ---------- */
+
+/* Botón discreto (acciones secundarias como Exportar CSV) */
+.discreto { background: transparent; color: var(--suave); border: 1px solid transparent; padding: 11px 12px; font-weight: 500; }
+.discreto:hover { color: var(--texto); background: var(--superficie-2); }
+
+/* Acciones de cada fila: aparecen al pasar el mouse o al navegar con teclado (en celular siempre visibles) */
+@media (hover: hover) {
+  .tabla tbody .botones button { opacity: 0; transition: opacity .15s; }
+  .tabla tbody tr:hover .botones button,
+  .tabla tbody tr:focus-within .botones button { opacity: 1; }
+}
+
+/* Textos secundarios más suaves para que destaquen los números importantes */
+.indicador small { color: #5d6066; }
+.tabla .id { color: #5d6066; }
+.nota { color: var(--tenue); }

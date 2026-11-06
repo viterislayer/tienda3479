@@ -106,8 +106,21 @@ function limpiar() {
   for (const c of config.campos) {
     if (c.porDefecto !== undefined) form.elements[c.col].value = typeof c.porDefecto === 'function' ? c.porDefecto() : c.porDefecto;
   }
-  $('crud-titulo').textContent = `Nuevo ${config.singular}`;
-  $('crud-cancelar').hidden = true;
+}
+
+// El formulario solo se muestra al crear o editar, para no saturar la pantalla
+function abrirFormulario(titulo) {
+  $('crud-titulo').textContent = titulo;
+  $('crud-tarjeta-form').hidden = false;
+  $('crud-nuevo').hidden = true;
+  $('crud-tarjeta-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  $('form-crud').elements[config.campos[0].col].focus({ preventScroll: true });
+}
+
+function cerrarFormulario() {
+  limpiar();
+  $('crud-tarjeta-form').hidden = true;
+  $('crud-nuevo').hidden = false;
 }
 
 // Ordena por la columna elegida: números como números y textos sin importar tildes ni mayúsculas
@@ -171,12 +184,10 @@ async function cargar() {
 
 function editar(id) {
   const fila = filas.find(f => f.id === id);
+  limpiar();
   editandoId = id;
   for (const c of config.campos) $('form-crud').elements[c.col].value = fila[c.col] ?? '';
-  $('crud-titulo').textContent = `Editando ${config.singular} #${id}`;
-  $('crud-cancelar').hidden = false;
-  $('form-crud').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  $('form-crud').elements[config.campos[0].col].focus({ preventScroll: true });
+  abrirFormulario(`Editando ${config.singular} #${id}`);
 }
 
 async function eliminar(id) {
@@ -188,7 +199,7 @@ async function eliminar(id) {
   if (!ok) return;
   try {
     await api(`${config.ruta}/${id}`, { method: 'DELETE' });
-    if (editandoId === id) limpiar();
+    if (editandoId === id) cerrarFormulario();
     aviso('Registro eliminado.');
     cargar();
   } catch (err) {
@@ -209,7 +220,7 @@ async function guardar(e) {
       api(editando ? `${config.ruta}/${editando}` : config.ruta, { method: editando ? 'PUT' : 'POST', body: JSON.stringify(datos) })
     );
     aviso(editando ? 'Cambios guardados.' : `${config.singular[0].toUpperCase()}${config.singular.slice(1)} registrado.`);
-    limpiar();
+    cerrarFormulario();
     await cargar();
     resaltarFila($('crud-filas'), registro.id);
   } catch (err) {
@@ -230,13 +241,16 @@ export async function mostrarCrud(nombre) {
   config = TABLAS[nombre];
   orden = { col: 'id', asc: true };
   $('crud-buscar').value = '';
+  $('crud-nuevo').textContent = `+ Nuevo ${config.singular}`;
   await pintarFormulario();
+  cerrarFormulario();
   await cargar();
 }
 
 export function iniciarCrud() {
   $('form-crud').addEventListener('submit', guardar);
-  $('crud-cancelar').addEventListener('click', limpiar);
+  $('crud-cancelar').addEventListener('click', cerrarFormulario);
+  $('crud-nuevo').addEventListener('click', () => { limpiar(); abrirFormulario(`Nuevo ${config.singular}`); });
   $('crud-buscar').addEventListener('input', pintarFilas);
   $('crud-csv').addEventListener('click', exportar);
   $('crud-cabecera').addEventListener('click', e => {

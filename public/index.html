@@ -159,7 +159,7 @@
             <h2>Historial de ventas</h2>
             <div class="herramientas">
               <input id="ventas-buscar" type="search" placeholder="Buscar venta...  ( / )" aria-label="Buscar ventas">
-              <button type="button" id="ventas-csv" class="secundario">Exportar CSV</button>
+              <button type="button" id="ventas-csv" class="discreto">Exportar CSV</button>
             </div>
           </div>
           <div class="tabla-contenedor">
@@ -218,7 +218,7 @@
             <h2>Historial de compras</h2>
             <div class="herramientas">
               <input id="compras-buscar" type="search" placeholder="Buscar compra...  ( / )" aria-label="Buscar compras">
-              <button type="button" id="compras-csv" class="secundario">Exportar CSV</button>
+              <button type="button" id="compras-csv" class="discreto">Exportar CSV</button>
             </div>
           </div>
           <div class="tabla-contenedor">
@@ -239,7 +239,7 @@
             <label>Desde <input id="fin-desde" type="date" required></label>
             <label>Hasta <input id="fin-hasta" type="date" required></label>
             <button type="submit" class="primario">Consultar</button>
-            <button type="button" id="fin-csv" class="secundario">Exportar CSV</button>
+            <button type="button" id="fin-csv" class="discreto">Exportar CSV</button>
           </form>
         </div>
 
@@ -277,13 +277,13 @@
 
       <!-- Catálogos y gastos (vista genérica) -->
       <section id="vista-crud" hidden>
-        <div class="tarjeta">
+        <div id="crud-tarjeta-form" class="tarjeta" hidden>
           <h2 id="crud-titulo"></h2>
           <form id="form-crud" class="formulario">
             <div id="crud-campos" class="campos"></div>
             <div class="acciones">
               <button type="submit" class="primario">Guardar</button>
-              <button type="button" id="crud-cancelar" class="secundario" hidden>Cancelar</button>
+              <button type="button" id="crud-cancelar" class="secundario">Cancelar</button>
             </div>
           </form>
         </div>
@@ -292,7 +292,8 @@
             <h2 id="crud-listado">Registros</h2>
             <div class="herramientas">
               <input id="crud-buscar" type="search" placeholder="Buscar...  ( / )" aria-label="Buscar registros">
-              <button type="button" id="crud-csv" class="secundario">Exportar CSV</button>
+              <button type="button" id="crud-csv" class="discreto">Exportar CSV</button>
+              <button type="button" id="crud-nuevo" class="primario">+ Nuevo</button>
             </div>
           </div>
           <div class="tabla-contenedor">
