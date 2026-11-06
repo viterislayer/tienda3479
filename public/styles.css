@@ -1,25 +1,39 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f8; color: #222; }
+
 header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #1f3a5f; color: #fff; }
 header h1 { margin: 0; font-size: 1.4rem; }
 .estado { font-size: .85rem; padding: 4px 10px; border-radius: 12px; background: #888; }
 .estado.ok { background: #2e8b57; }
 .estado.error { background: #c0392b; }
-nav { display: flex; gap: 8px; padding: 16px 24px 0; }
-.tab { padding: 8px 18px; border: none; border-radius: 6px 6px 0 0; background: #dde3ea; color: #222; cursor: pointer; font-size: 1rem; }
-.tab.activa { background: #fff; font-weight: bold; }
-main { margin: 0 24px 24px; padding: 20px; background: #fff; border-radius: 0 6px 6px 6px; }
-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 20px; }
-form h2 { width: 100%; margin: 0 0 4px; font-size: 1.1rem; }
-#campos { display: flex; flex-wrap: wrap; gap: 12px; }
+
+nav { display: flex; gap: 8px; padding: 16px 24px 0; flex-wrap: wrap; }
+nav button { background: #dde3ea; color: #222; border-radius: 6px 6px 0 0; font-size: 1rem; }
+nav button.activa { background: #fff; font-weight: bold; }
+
+main { margin: 0 24px 24px; }
+.tarjeta { background: #fff; padding: 20px; border-radius: 6px; margin-bottom: 16px; }
+.tarjeta h2 { margin: 0 0 12px; font-size: 1.1rem; }
+
+.fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
 label { display: flex; flex-direction: column; font-size: .85rem; gap: 4px; }
-input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; min-width: 180px; }
+input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; min-width: 180px; font-size: .95rem; }
+
 button { padding: 8px 16px; border: none; border-radius: 4px; background: #1f3a5f; color: #fff; cursor: pointer; }
-button.secundario { background: #888; }
+button:disabled { opacity: .6; cursor: default; }
+button.secundario { background: #6c7a89; }
 button.peligro { background: #c0392b; }
-.acciones { display: flex; gap: 8px; }
+.acciones { display: flex; gap: 8px; margin-top: 12px; }
+
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
 th { background: #f0f3f6; }
 td.botones { display: flex; gap: 6px; }
 td.botones button { padding: 5px 10px; font-size: .85rem; }
+.vacio { color: #888; text-align: center; }
+
+.detalle { margin-top: 16px; padding: 16px; border: 1px solid #dde3ea; border-radius: 6px; background: #fafbfc; }
+.detalle h3 { margin: 0 0 8px; font-size: 1rem; }
+
+.aviso { position: fixed; bottom: 20px; right: 20px; padding: 12px 18px; border-radius: 6px; color: #fff; background: #2e8b57; box-shadow: 0 4px 12px rgba(0,0,0,.15); max-width: 360px; }
+.aviso.error { background: #c0392b; }

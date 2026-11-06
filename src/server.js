@@ -1,19 +1,15 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const path = require('path');
 const express = require('express');
-const oracledb = require('oracledb');
 const db = require('./db');
-
-// Tablas expuestas por la API y sus columnas editables (ID se genera solo)
-const TABLAS = {
-  productos: { tabla: 'PRODUCTOS', columnas: ['NOMBRE', 'PRECIO', 'STOCK'] },
-  clientes: { tabla: 'CLIENTES', columnas: ['NOMBRE', 'NIT_DPI', 'CORREO'] },
-};
+const crearCrud = require('./routes/crud');
+const ventas = require('./routes/ventas');
+const { manejarErrores } = require('./errores');
 
 const app = express();
 app.use(express.json());
 
-// Permite llamar a la API desde otros orígenes (Live Preview, Postman web, otras apps)
+// Permite llamar a la API desde otros orígenes (Postman, otras apps)
 app.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -21,92 +17,54 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/api/estado', async (req, res) => {
-  try {
-    const r = await db.query(`SELECT USER AS USUARIO, SYS_CONTEXT('USERENV','CON_NAME') AS BASE FROM DUAL`);
-    res.json({ conectado: true, ...r.rows[0] });
-  } catch (e) {
-    res.status(500).json({ conectado: false, error: e.message });
-  }
+  const { rows } = await db.query(`SELECT USER AS usuario, SYS_CONTEXT('USERENV', 'CON_NAME') AS base FROM DUAL`);
+  res.json({ conectado: true, ...rows[0] });
 });
 
-function tomarDatos(cfg, body) {
-  const datos = {};
-  for (const col of cfg.columnas) datos[col] = body[col] ?? body[col.toLowerCase()] ?? null;
-  return datos;
-}
+app.use('/api/categorias', crearCrud({
+  tabla: 'categorias',
+  campos: { nombre: 'texto' },
+  requeridos: ['nombre'],
+  orden: 'nombre',
+}));
 
-for (const [ruta, cfg] of Object.entries(TABLAS)) {
-  const base = `/api/${ruta}`;
-  const cols = cfg.columnas;
+app.use('/api/productos', crearCrud({
+  tabla: 'productos',
+  campos: { nombre: 'texto', precio: 'numero', stock: 'entero', categoria_id: 'entero' },
+  requeridos: ['nombre', 'precio', 'stock', 'categoria_id'],
+  consulta: `SELECT p.id, p.nombre, p.precio, p.stock, p.categoria_id, c.nombre AS categoria
+               FROM productos p
+               JOIN categorias c ON c.id = p.categoria_id`,
+  columnaId: 'p.id',
+  orden: 'p.nombre',
+}));
 
-  app.get(base, async (req, res, next) => {
-    try {
-      const r = await db.query(`SELECT ID, ${cols.join(', ')} FROM ${cfg.tabla} ORDER BY ID`);
-      res.json(r.rows);
-    } catch (e) { next(e); }
-  });
+app.use('/api/clientes', crearCrud({
+  tabla: 'clientes',
+  campos: { nombre: 'texto', nit_dpi: 'texto', correo: 'texto' },
+  requeridos: ['nombre', 'nit_dpi'],
+  orden: 'nombre',
+}));
 
-  app.get(`${base}/:id`, async (req, res, next) => {
-    try {
-      const r = await db.query(`SELECT ID, ${cols.join(', ')} FROM ${cfg.tabla} WHERE ID = :id`, { id: Number(req.params.id) });
-      if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
-      res.json(r.rows[0]);
-    } catch (e) { next(e); }
-  });
-
-  app.post(base, async (req, res, next) => {
-    try {
-      const datos = tomarDatos(cfg, req.body);
-      const r = await db.query(
-        `INSERT INTO ${cfg.tabla} (ID, ${cols.join(', ')})
-         VALUES ((SELECT NVL(MAX(ID), 0) + 1 FROM ${cfg.tabla}), ${cols.map(c => ':' + c).join(', ')})
-         RETURNING ID INTO :nuevoId`,
-        { ...datos, nuevoId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
-      );
-      res.status(201).json({ ID: r.outBinds.nuevoId[0], ...datos });
-    } catch (e) { next(e); }
-  });
-
-  app.put(`${base}/:id`, async (req, res, next) => {
-    try {
-      const datos = tomarDatos(cfg, req.body);
-      const r = await db.query(
-        `UPDATE ${cfg.tabla} SET ${cols.map(c => `${c} = :${c}`).join(', ')} WHERE ID = :id`,
-        { ...datos, id: Number(req.params.id) }
-      );
-      if (!r.rowsAffected) return res.status(404).json({ error: 'No encontrado' });
-      res.json({ ID: Number(req.params.id), ...datos });
-    } catch (e) { next(e); }
-  });
-
-  app.delete(`${base}/:id`, async (req, res, next) => {
-    try {
-      const r = await db.query(`DELETE FROM ${cfg.tabla} WHERE ID = :id`, { id: Number(req.params.id) });
-      if (!r.rowsAffected) return res.status(404).json({ error: 'No encontrado' });
-      res.json({ eliminado: true });
-    } catch (e) { next(e); }
-  });
-}
+app.use('/api/ventas', ventas);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
 });
 
-app.use((err, req, res, next) => {
-  console.error(err.message);
-  res.status(400).json({ error: err.message });
-});
+app.use(manejarErrores);
 
 db.init()
   .then(() => {
     const port = process.env.PORT || 3000;
     app.listen(port, () => console.log(`Servidor listo en http://localhost:${port}`));
   })
-  .catch(e => {
-    console.error('No se pudo conectar a Oracle:', e.message);
+  .catch(err => {
+    console.error('No se pudo conectar a Oracle:', err.message);
     process.exit(1);
   });
 

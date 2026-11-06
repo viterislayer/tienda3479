@@ -1,32 +1,64 @@
+@base = http://localhost:3000/api
+
 ### Estado de la conexion
-GET http://localhost:3000/api/estado
+GET {{base}}/estado
 
-### Listar productos
-GET http://localhost:3000/api/productos
+### ---------- Categorias ----------
+GET {{base}}/categorias
 
-### Obtener un producto
-GET http://localhost:3000/api/productos/1
-
-### Crear producto
-POST http://localhost:3000/api/productos
+###
+POST {{base}}/categorias
 Content-Type: application/json
 
-{ "NOMBRE": "Producto de prueba", "PRECIO": 10.50, "STOCK": 5 }
+{ "nombre": "Impresoras" }
 
-### Actualizar producto
-PUT http://localhost:3000/api/productos/1
+### ---------- Productos ----------
+GET {{base}}/productos
+
+###
+GET {{base}}/productos/1
+
+###
+POST {{base}}/productos
 Content-Type: application/json
 
-{ "NOMBRE": "Producto editado", "PRECIO": 12, "STOCK": 8 }
+{ "nombre": "Monitor 24", "precio": 1200, "stock": 5, "categoria_id": 1 }
 
-### Eliminar producto
-DELETE http://localhost:3000/api/productos/99
-
-### Listar clientes
-GET http://localhost:3000/api/clientes
-
-### Crear cliente
-POST http://localhost:3000/api/clientes
+###
+PUT {{base}}/productos/1
 Content-Type: application/json
 
-{ "NOMBRE": "Cliente de prueba", "NIT_DPI": "1234567-8", "CORREO": "cliente@correo.com" }
+{ "nombre": "Laptop HP", "precio": 4300, "stock": 7, "categoria_id": 1 }
+
+###
+DELETE {{base}}/productos/99
+
+### ---------- Clientes ----------
+GET {{base}}/clientes
+
+###
+POST {{base}}/clientes
+Content-Type: application/json
+
+{ "nombre": "Maria Gomez", "nit_dpi": "3456789-0", "correo": "maria@correo.com" }
+
+### ---------- Ventas ----------
+GET {{base}}/ventas
+
+###
+GET {{base}}/ventas/1
+
+### Registrar venta (descuenta stock en una transaccion)
+POST {{base}}/ventas
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "productos": [
+    { "producto_id": 2, "cantidad": 1 },
+    { "producto_id": 3, "cantidad": 2 }
+  ]
+}
+
+### Anular venta (devuelve el stock)
+DELETE {{base}}/ventas/1
