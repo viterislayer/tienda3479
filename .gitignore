@@ -5,3 +5,4 @@ wallet*/
 
 .vercel
 .env*
+!.env.example
