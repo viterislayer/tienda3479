@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: tienda3479
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_CONNECT_STRING
+        sync: false
+      - key: DB_WALLET_PEM_BASE64
+        sync: false
+      - key: DB_WALLET_PASSWORD
+        sync: false

@@ -147,8 +147,10 @@ document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', (
 }));
 
 (async () => {
-  // Si la página se abrió fuera del servidor Node (Live Preview, Live Server, doble clic), se redirige a él
-  if (!(await verificarEstado()) && location.origin !== SERVIDOR) {
+  // Si en local la página se abrió fuera del servidor Node (Live Preview, Live Server, doble clic), se redirige a él
+  const esLocalSinServidor = location.protocol === 'file:'
+    || (['localhost', '127.0.0.1'].includes(location.hostname) && location.origin !== SERVIDOR);
+  if (!(await verificarEstado()) && esLocalSinServidor) {
     location.replace(SERVIDOR);
     return;
   }
