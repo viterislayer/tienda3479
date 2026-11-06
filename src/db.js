@@ -14,19 +14,28 @@ function prepararWallet() {
   return { walletLocation: dir, walletPassword: process.env.DB_WALLET_PASSWORD };
 }
 
-async function init() {
-  await oracledb.createPool({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    connectString: process.env.DB_CONNECT_STRING,
-    ...prepararWallet(),
-    poolMin: 1,
-    poolMax: 5,
-  });
+// El pool se crea en la primera consulta (necesario en entornos serverless como Vercel)
+let poolPromise = null;
+
+function getPool() {
+  if (!poolPromise) {
+    poolPromise = oracledb.createPool({
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      connectString: process.env.DB_CONNECT_STRING,
+      ...prepararWallet(),
+      poolMin: 0,
+      poolMax: 5,
+    }).catch(err => {
+      poolPromise = null;
+      throw err;
+    });
+  }
+  return poolPromise;
 }
 
 async function query(sql, binds = {}) {
-  const conn = await oracledb.getConnection();
+  const conn = await (await getPool()).getConnection();
   try {
     return await conn.execute(sql, binds);
   } finally {
@@ -35,7 +44,7 @@ async function query(sql, binds = {}) {
 }
 
 async function close() {
-  await oracledb.getPool().close(5);
+  if (poolPromise) await (await poolPromise).close(5);
 }
 
-module.exports = { init, query, close };
+module.exports = { getPool, query, close };

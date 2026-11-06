@@ -20,9 +20,26 @@ npm start
 
 4. Abrir http://localhost:3000
 
+## Despliegue (producción)
+
+- **Frontend + API:** Vercel, conectado a este repositorio. Cada push a `main` se despliega solo.
+- **Base de datos:** Oracle Autonomous Database (Oracle Cloud Always Free).
+
+Variables de entorno en Vercel:
+
+| Variable               | Valor                                                  |
+|------------------------|--------------------------------------------------------|
+| `DB_USER`              | Usuario de la base                                     |
+| `DB_PASSWORD`          | Contraseña del usuario                                 |
+| `DB_CONNECT_STRING`    | Cadena de conexión del wallet (servicio `_low`)        |
+| `DB_WALLET_PEM_BASE64` | Contenido de `ewallet.pem` del wallet, en base64       |
+| `DB_WALLET_PASSWORD`   | Contraseña del wallet                                  |
+
 ## Estructura
 
 ```
+api/index.js       Entrada de la API en Vercel
+vercel.json        Configuración de Vercel
 .env.example       Plantilla de credenciales (copiar como .env)
 sql/schema.sql     Creación de tablas y datos de ejemplo
 src/db.js          Pool de conexiones a Oracle

@@ -100,17 +100,22 @@ app.use((err, req, res, next) => {
   res.status(400).json({ error: err.message });
 });
 
-db.init()
-  .then(() => {
-    const port = process.env.PORT || 3000;
-    app.listen(port, () => console.log(`Servidor listo en http://localhost:${port}`));
-  })
-  .catch(e => {
-    console.error('No se pudo conectar a Oracle:', e.message);
-    process.exit(1);
-  });
+// En local se levanta el servidor; en Vercel se exporta la app y la plataforma la ejecuta
+if (require.main === module) {
+  db.getPool()
+    .then(() => {
+      const port = process.env.PORT || 3000;
+      app.listen(port, () => console.log(`Servidor listo en http://localhost:${port}`));
+    })
+    .catch(e => {
+      console.error('No se pudo conectar a Oracle:', e.message);
+      process.exit(1);
+    });
 
-process.on('SIGINT', async () => {
-  await db.close().catch(() => {});
-  process.exit(0);
-});
+  process.on('SIGINT', async () => {
+    await db.close().catch(() => {});
+    process.exit(0);
+  });
+}
+
+module.exports = app;
