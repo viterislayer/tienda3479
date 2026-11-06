@@ -25,6 +25,18 @@ export function moneda(valor) {
   return 'Q ' + Number(valor || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// A partir de esta cantidad un producto se considera con stock bajo
+export const STOCK_BAJO = 3;
+
+export function insigniaStock(stock) {
+  const tipo = stock === 0 ? 'peligro' : stock <= STOCK_BAJO ? 'alerta' : 'ok';
+  return `<span class="insignia ${tipo}">${stock}</span>`;
+}
+
+export function filaVacia(columnas, mensaje) {
+  return `<tr><td colspan="${columnas}" class="vacio">${escapar(mensaje)}</td></tr>`;
+}
+
 export function fecha(valor) {
   return new Date(valor).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' });
 }

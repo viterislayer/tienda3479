@@ -1,5 +1,5 @@
--- Esquema normalizado (3FN) de la Tienda 3479 - Oracle 23ai
--- Se puede ejecutar en SQL Developer o con: npm run db:init
+-- Estructura normalizada (3FN) de la Tienda 3479 - Oracle 23ai
+-- Se ejecuta con: npm run db:init (o en SQL Developer)
 -- ATENCION: borra y vuelve a crear las tablas.
 
 DROP TABLE IF EXISTS detalle_venta CASCADE CONSTRAINTS;
@@ -42,28 +42,3 @@ CREATE TABLE detalle_venta (
   precio_unitario  NUMBER(10,2) NOT NULL CHECK (precio_unitario >= 0),
   PRIMARY KEY (venta_id, producto_id)
 );
-
--- Datos de ejemplo
-INSERT INTO categorias (nombre) VALUES ('Computadoras');
-INSERT INTO categorias (nombre) VALUES ('Accesorios');
-INSERT INTO categorias (nombre) VALUES ('Telefonia');
-
-INSERT INTO productos (nombre, precio, stock, categoria_id)
-  VALUES ('Laptop HP', 4500, 7, (SELECT id FROM categorias WHERE nombre = 'Computadoras'));
-INSERT INTO productos (nombre, precio, stock, categoria_id)
-  VALUES ('Mouse inalambrico', 85.50, 6, (SELECT id FROM categorias WHERE nombre = 'Accesorios'));
-INSERT INTO productos (nombre, precio, stock, categoria_id)
-  VALUES ('Teclado mecanico', 350, 10, (SELECT id FROM categorias WHERE nombre = 'Accesorios'));
-INSERT INTO productos (nombre, precio, stock, categoria_id)
-  VALUES ('Telefono', 300, 1, (SELECT id FROM categorias WHERE nombre = 'Telefonia'));
-
-INSERT INTO clientes (nombre, nit_dpi, correo) VALUES ('Ana Lopez', '1234567-8', 'ana.lopez.nuevo@correo.com');
-INSERT INTO clientes (nombre, nit_dpi, correo) VALUES ('Carlos Perez', '2345678-9', 'carlos.perez@correo.com');
-
-INSERT INTO ventas (cliente_id) VALUES ((SELECT id FROM clientes WHERE nit_dpi = '1234567-8'));
-INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario)
-  VALUES ((SELECT MAX(id) FROM ventas), (SELECT id FROM productos WHERE nombre = 'Laptop HP'), 1, 4500);
-INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario)
-  VALUES ((SELECT MAX(id) FROM ventas), (SELECT id FROM productos WHERE nombre = 'Mouse inalambrico'), 2, 85.50);
-
-COMMIT;

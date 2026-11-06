@@ -12,7 +12,7 @@ Sistema de ventas con base de datos Oracle normalizada (3FN), API REST en Node.j
 ## Cómo ejecutar
 
 1. Copiar `.env.example` como `.env` y poner las credenciales de la base.
-2. Instalar dependencias y crear las tablas con datos de ejemplo:
+2. Instalar dependencias y crear las tablas con los datos de la tienda:
 
 ```
 npm install
@@ -25,7 +25,8 @@ npm run db:init
 npm start
 ```
 
-`npm run db:init` borra y vuelve a crear las tablas. También se puede ejecutar `sql/schema.sql` en SQL Developer.
+`npm run db:init` borra y vuelve a crear las tablas (`sql/schema.sql`) y carga los datos (`sql/datos.sql`).
+Para crear solo las tablas vacías: `npm run db:init -- --vacia`. Ambos archivos también se pueden ejecutar en SQL Developer.
 
 ## Base de datos
 
@@ -63,9 +64,10 @@ Ejemplos listos para probar en `requests.http` (extensión REST Client).
 ## Estructura
 
 ```
-sql/schema.sql         Tablas, restricciones y datos de ejemplo
+sql/schema.sql         Tablas y restricciones
+sql/datos.sql          Datos de la tienda (categorías, productos, clientes)
 docs/normalizacion.md  Normalización paso a paso
-scripts/init-db.js     Ejecuta schema.sql (npm run db:init)
+scripts/init-db.js     Ejecuta schema.sql y datos.sql (npm run db:init)
 src/server.js          Servidor Express y rutas
 src/db.js              Pool de conexiones y transacciones
 src/routes/crud.js     CRUD genérico para tablas simples

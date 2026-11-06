@@ -7,85 +7,139 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>Tienda 3479</h1>
-    <span id="estado" class="estado">Conectando...</span>
-  </header>
-
-  <nav id="pestanas">
-    <button data-vista="ventas" class="activa">Ventas</button>
-    <button data-vista="productos">Productos</button>
-    <button data-vista="categorias">Categorías</button>
-    <button data-vista="clientes">Clientes</button>
-  </nav>
-
-  <main>
-    <!-- Ventas -->
-    <section id="vista-ventas">
-      <div class="tarjeta">
-        <h2>Nueva venta</h2>
-        <form id="form-venta">
-          <div class="fila">
-            <label>Cliente
-              <select id="venta-cliente" required></select>
-            </label>
-          </div>
-          <div class="fila">
-            <label>Producto
-              <select id="venta-producto"></select>
-            </label>
-            <label>Cantidad
-              <input id="venta-cantidad" type="number" min="1" step="1" value="1">
-            </label>
-            <button type="button" id="btn-agregar" class="secundario">Agregar</button>
-          </div>
-          <table>
-            <thead>
-              <tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>
-            </thead>
-            <tbody id="venta-lineas"></tbody>
-            <tfoot>
-              <tr><th colspan="3">Total</th><th id="venta-total">Q 0.00</th><th></th></tr>
-            </tfoot>
-          </table>
-          <div class="acciones">
-            <button type="submit">Registrar venta</button>
-          </div>
-        </form>
+  <div class="app">
+    <aside class="barra">
+      <div class="marca">
+        <span class="logo">T</span>
+        <div>
+          <strong>Tienda 3479</strong>
+          <small>Sistema de ventas</small>
+        </div>
       </div>
 
-      <div class="tarjeta">
-        <h2>Historial de ventas</h2>
-        <table>
-          <thead>
-            <tr><th>#</th><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Acciones</th></tr>
-          </thead>
-          <tbody id="ventas-lista"></tbody>
-        </table>
-        <div id="venta-detalle" class="detalle" hidden></div>
-      </div>
-    </section>
+      <nav id="pestanas">
+        <button data-vista="ventas" class="activa">
+          <svg viewBox="0 0 24 24"><path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.8h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>
+          Ventas
+        </button>
+        <button data-vista="productos">
+          <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+          Productos
+        </button>
+        <button data-vista="categorias">
+          <svg viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+          Categorías
+        </button>
+        <button data-vista="clientes">
+          <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-5-6.7"/></svg>
+          Clientes
+        </button>
+      </nav>
 
-    <!-- Productos, categorías y clientes (vista genérica) -->
-    <section id="vista-crud" hidden>
-      <div class="tarjeta">
-        <form id="form-crud">
+      <div id="estado" class="estado"><span class="punto"></span><span id="estado-texto">Conectando...</span></div>
+    </aside>
+
+    <main class="contenido">
+      <header class="encabezado">
+        <h1 id="titulo">Ventas</h1>
+        <p id="subtitulo">Registra ventas y consulta el historial</p>
+      </header>
+
+      <!-- Ventas -->
+      <section id="vista-ventas">
+        <div class="indicadores">
+          <div class="indicador">
+            <span>Ventas registradas</span>
+            <strong id="kpi-ventas">0</strong>
+          </div>
+          <div class="indicador">
+            <span>Ingresos totales</span>
+            <strong id="kpi-ingresos">Q 0.00</strong>
+          </div>
+          <div class="indicador">
+            <span>Productos con stock bajo</span>
+            <strong id="kpi-stock">0</strong>
+          </div>
+        </div>
+
+        <div class="rejilla-venta">
+          <div class="tarjeta">
+            <h2>Nueva venta</h2>
+            <form id="form-venta" class="formulario">
+              <label class="completo">Cliente
+                <select id="venta-cliente" required></select>
+              </label>
+              <label class="completo">Producto
+                <select id="venta-producto"></select>
+              </label>
+              <label>Cantidad
+                <input id="venta-cantidad" type="number" min="1" step="1" value="1">
+              </label>
+              <button type="button" id="btn-agregar" class="secundario">+ Agregar al detalle</button>
+            </form>
+          </div>
+
+          <div class="tarjeta resumen">
+            <h2>Detalle de la venta</h2>
+            <div class="tabla-contenedor">
+              <table class="tabla compacta">
+                <thead>
+                  <tr><th>Producto</th><th class="num">Cant.</th><th class="num">Subtotal</th><th></th></tr>
+                </thead>
+                <tbody id="venta-lineas"></tbody>
+              </table>
+            </div>
+            <div class="total">
+              <span>Total</span>
+              <strong id="venta-total">Q 0.00</strong>
+            </div>
+            <button type="submit" form="form-venta" class="primario ancho">Registrar venta</button>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <h2>Historial de ventas</h2>
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead>
+                <tr><th>#</th><th>Fecha</th><th>Cliente</th><th class="num">Productos</th><th class="num">Total</th><th></th></tr>
+              </thead>
+              <tbody id="ventas-lista"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Productos, categorías y clientes (vista genérica) -->
+      <section id="vista-crud" hidden>
+        <div class="tarjeta">
           <h2 id="crud-titulo"></h2>
-          <div id="crud-campos" class="fila"></div>
-          <div class="acciones">
-            <button type="submit">Guardar</button>
-            <button type="button" id="crud-cancelar" class="secundario" hidden>Cancelar</button>
+          <form id="form-crud" class="formulario">
+            <div id="crud-campos" class="campos"></div>
+            <div class="acciones">
+              <button type="submit" class="primario">Guardar</button>
+              <button type="button" id="crud-cancelar" class="secundario" hidden>Cancelar</button>
+            </div>
+          </form>
+        </div>
+        <div class="tarjeta">
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead id="crud-cabecera"></thead>
+              <tbody id="crud-filas"></tbody>
+            </table>
           </div>
-        </form>
-      </div>
-      <div class="tarjeta">
-        <table>
-          <thead id="crud-cabecera"></thead>
-          <tbody id="crud-filas"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="modal-venta" class="modal">
+    <div id="venta-detalle"></div>
+    <form method="dialog" class="acciones derecha">
+      <button class="secundario">Cerrar</button>
+    </form>
+  </dialog>
 
   <div id="aviso" class="aviso" hidden></div>
 

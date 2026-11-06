@@ -1,4 +1,4 @@
-import { api, $, escapar, moneda, aviso, opcionesSelect } from './comun.js';
+import { api, $, escapar, moneda, aviso, opcionesSelect, insigniaStock, filaVacia } from './comun.js';
 
 // Configuración de cada tabla administrable desde la página
 export const TABLAS = {
@@ -8,8 +8,8 @@ export const TABLAS = {
     campos: [
       { col: 'nombre', etiqueta: 'Nombre', tipo: 'text', requerido: true },
       { col: 'categoria_id', etiqueta: 'Categoría', tipo: 'select', origen: '/api/categorias', mostrar: 'categoria', requerido: true },
-      { col: 'precio', etiqueta: 'Precio', tipo: 'number', step: '0.01', min: '0', requerido: true, formato: moneda },
-      { col: 'stock', etiqueta: 'Stock', tipo: 'number', step: '1', min: '0', requerido: true, porDefecto: 0 },
+      { col: 'precio', etiqueta: 'Precio (Q)', tipo: 'number', step: '0.01', min: '0', requerido: true, num: true, formato: moneda },
+      { col: 'stock', etiqueta: 'Stock', tipo: 'number', step: '1', min: '0', requerido: true, num: true, porDefecto: 0, html: insigniaStock },
     ],
   },
   categorias: {
@@ -39,12 +39,18 @@ function campoHtml(campo, opciones) {
   if (campo.tipo === 'select') {
     return `<label>${campo.etiqueta}
       <select name="${campo.col}" ${requerido}>
-        <option value="">-- Seleccione --</option>${opcionesSelect(opciones, o => o.nombre)}
+        <option value="">Seleccione...</option>${opcionesSelect(opciones, o => o.nombre)}
       </select></label>`;
   }
   const extra = ['step', 'min'].filter(a => campo[a]).map(a => `${a}="${campo[a]}"`).join(' ');
   return `<label>${campo.etiqueta}
     <input name="${campo.col}" type="${campo.tipo}" ${extra} ${requerido}></label>`;
+}
+
+function celda(campo, fila) {
+  const valor = fila[campo.mostrar || campo.col];
+  const contenido = campo.html ? campo.html(valor) : escapar(valor == null ? '—' : campo.formato ? campo.formato(valor) : valor);
+  return `<td class="${campo.num ? 'num' : ''}">${contenido}</td>`;
 }
 
 async function pintarFormulario() {
@@ -65,26 +71,23 @@ function limpiar() {
 
 async function cargar() {
   const columnas = config.campos.length + 2;
-  $('crud-cabecera').innerHTML =
-    `<tr><th>ID</th>${config.campos.map(c => `<th>${c.etiqueta}</th>`).join('')}<th>Acciones</th></tr>`;
+  $('crud-cabecera').innerHTML = `<tr><th>#</th>${config.campos
+    .map(c => `<th class="${c.num ? 'num' : ''}">${c.etiqueta}</th>`).join('')}<th></th></tr>`;
   try {
     filas = await api(config.ruta);
     $('crud-filas').innerHTML = filas.length
       ? filas.map(f => `
         <tr>
-          <td>${f.id}</td>
-          ${config.campos.map(c => {
-            const valor = f[c.mostrar || c.col];
-            return `<td>${escapar(c.formato ? c.formato(valor) : valor)}</td>`;
-          }).join('')}
+          <td class="id">${f.id}</td>
+          ${config.campos.map(c => celda(c, f)).join('')}
           <td class="botones">
-            <button data-accion="editar" data-id="${f.id}">Editar</button>
-            <button data-accion="eliminar" data-id="${f.id}" class="peligro">Eliminar</button>
+            <button class="boton-tabla" data-accion="editar" data-id="${f.id}">Editar</button>
+            <button class="boton-tabla peligro" data-accion="eliminar" data-id="${f.id}">Eliminar</button>
           </td>
         </tr>`).join('')
-      : `<tr><td colspan="${columnas}" class="vacio">Sin registros</td></tr>`;
+      : filaVacia(columnas, `Todavía no hay registros. Agrega el primer ${config.singular}.`);
   } catch (err) {
-    $('crud-filas').innerHTML = `<tr><td colspan="${columnas}" class="vacio">Error: ${escapar(err.message)}</td></tr>`;
+    $('crud-filas').innerHTML = filaVacia(columnas, `Error: ${err.message}`);
   }
 }
 
@@ -94,6 +97,7 @@ function editar(id) {
   for (const c of config.campos) $('form-crud').elements[c.col].value = fila[c.col] ?? '';
   $('crud-titulo').textContent = `Editando ${config.singular} #${id}`;
   $('crud-cancelar').hidden = false;
+  $('form-crud').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function eliminar(id) {
