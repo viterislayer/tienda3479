@@ -1,57 +1,47 @@
-const oracledb = require('oracledb');
+const { Pool, types } = require('pg');
 
-oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
+// PostgreSQL entrega NUMERIC y BIGINT (resultado de COUNT/SUM) como texto; la API los entrega como números
+types.setTypeParser(types.builtins.NUMERIC, valor => parseFloat(valor));
+types.setTypeParser(types.builtins.INT8, valor => parseInt(valor, 10));
 
-async function init() {
-  await oracledb.createPool({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    connectString: process.env.DB_CONNECT_STRING,
-    poolMin: 1,
-    poolMax: 5,
-  });
-}
+const configuracion = {
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+};
 
-// Oracle devuelve los nombres de columna en MAYÚSCULAS; la API los entrega en minúsculas
-function aMinusculas(filas) {
-  return filas.map(fila =>
-    Object.fromEntries(Object.entries(fila).map(([col, valor]) => [col.toLowerCase(), valor]))
-  );
-}
+const pool = new Pool({ ...configuracion, max: 10 });
 
-async function ejecutar(conn, sql, binds = {}, opciones = {}) {
-  const resultado = await conn.execute(sql, binds, opciones);
-  if (resultado.rows) resultado.rows = aMinusculas(resultado.rows);
-  return resultado;
-}
-
-// Una sola sentencia, confirmada al terminar
-async function query(sql, binds = {}) {
-  const conn = await oracledb.getConnection();
-  try {
-    return await ejecutar(conn, sql, binds, { autoCommit: true });
-  } finally {
-    await conn.close();
-  }
+// Una sola sentencia
+function query(sql, parametros = []) {
+  return pool.query(sql, parametros);
 }
 
 // Varias sentencias que se confirman juntas o se deshacen todas si alguna falla
 async function transaccion(trabajo) {
-  const conn = await oracledb.getConnection();
+  const cliente = await pool.connect();
   try {
-    const resultado = await trabajo((sql, binds) => ejecutar(conn, sql, binds));
-    await conn.commit();
+    await cliente.query('BEGIN');
+    const resultado = await trabajo((sql, parametros) => cliente.query(sql, parametros));
+    await cliente.query('COMMIT');
     return resultado;
   } catch (err) {
-    await conn.rollback().catch(() => {});
+    await cliente.query('ROLLBACK').catch(() => {});
     throw err;
   } finally {
-    await conn.close();
+    cliente.release();
   }
 }
 
-async function close() {
-  await oracledb.getPool().close(5);
+// Comprueba la conexión al arrancar
+async function init() {
+  await pool.query('SELECT 1');
 }
 
-module.exports = { init, query, transaccion, close, BIND_OUT: oracledb.BIND_OUT, NUMBER: oracledb.NUMBER };
+function close() {
+  return pool.end();
+}
+
+module.exports = { configuracion, init, query, transaccion, close };

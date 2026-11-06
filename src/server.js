@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/api/estado', async (req, res) => {
-  const { rows } = await db.query(`SELECT USER AS usuario, SYS_CONTEXT('USERENV', 'CON_NAME') AS base FROM DUAL`);
+  const { rows } = await db.query('SELECT current_user AS usuario, current_database() AS base');
   res.json({ conectado: true, ...rows[0] });
 });
 
@@ -66,7 +66,7 @@ db.init()
     app.listen(port, () => console.log(`Servidor listo en http://localhost:${port}`));
   })
   .catch(err => {
-    console.error('No se pudo conectar a Oracle:', err.message);
+    console.error('No se pudo conectar a PostgreSQL:', err.message);
     process.exit(1);
   });
 

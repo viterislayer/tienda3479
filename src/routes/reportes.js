@@ -4,67 +4,60 @@ const db = require('../db');
 const router = express.Router();
 const DIAS_GRAFICA = 14;
 const STOCK_BAJO = 3;
+// Las fechas se guardan con zona horaria; los días se cuentan en hora de Guatemala
+const ZONA = 'America/Guatemala';
+const HOY = `(now() AT TIME ZONE '${ZONA}')::date`;
+const DIA_VENTA = `(v.fecha AT TIME ZONE '${ZONA}')::date`;
 
-// Total vendido (cantidad de ventas y monto) desde una fecha calculada en Oracle
-async function totalesDesde(expresionFecha) {
+// Cantidad de ventas y monto vendido a partir de un día (o de todo el historial)
+async function totalesDesde(desde) {
   const { rows } = await db.query(
     `SELECT COUNT(DISTINCT v.id) AS cantidad,
-            NVL(SUM(d.cantidad * d.precio_unitario), 0) AS total
+            COALESCE(SUM(d.cantidad * d.precio_unitario), 0) AS total
        FROM ventas v
        JOIN detalle_venta d ON d.venta_id = v.id
-      WHERE v.fecha >= ${expresionFecha}`
+      WHERE ${desde ? `${DIA_VENTA} >= ${desde}` : 'TRUE'}`
   );
   return rows[0];
 }
 
-// Devuelve los últimos N días, incluidos los días sin ventas (con total 0)
-function completarDias(hoy, filas) {
-  const porDia = new Map(filas.map(f => [f.dia, f]));
-  const dias = [];
-  for (let i = DIAS_GRAFICA - 1; i >= 0; i--) {
-    const fecha = new Date(`${hoy}T00:00:00Z`);
-    fecha.setUTCDate(fecha.getUTCDate() - i);
-    const dia = fecha.toISOString().slice(0, 10);
-    dias.push({ dia, cantidad: porDia.get(dia)?.cantidad || 0, total: porDia.get(dia)?.total || 0 });
-  }
-  return dias;
-}
-
 router.get('/resumen', async (req, res) => {
-  const [hoy, mes, total, stock, porDia, topProductos, porCategoria, topClientes, fecha] = await Promise.all([
-    totalesDesde('TRUNC(SYSDATE)'),
-    totalesDesde(`TRUNC(SYSDATE, 'MM')`),
-    totalesDesde(`DATE '1900-01-01'`),
+  const [hoy, mes, total, stock, porDia, topProductos, porCategoria, topClientes] = await Promise.all([
+    totalesDesde(HOY),
+    totalesDesde(`date_trunc('month', ${HOY})::date`),
+    totalesDesde(null),
     db.query(
-      `SELECT COUNT(CASE WHEN stock = 0 THEN 1 END) AS agotados,
-              COUNT(CASE WHEN stock BETWEEN 1 AND :bajo THEN 1 END) AS bajos
+      `SELECT COUNT(*) FILTER (WHERE stock = 0) AS agotados,
+              COUNT(*) FILTER (WHERE stock BETWEEN 1 AND $1) AS bajos
          FROM productos`,
-      { bajo: STOCK_BAJO }
+      [STOCK_BAJO]
     ),
+    // generate_series crea los 14 días aunque no haya ventas; el LEFT JOIN los deja en 0
     db.query(
-      `SELECT TO_CHAR(TRUNC(v.fecha), 'YYYY-MM-DD') AS dia,
+      `SELECT to_char(dias.dia, 'YYYY-MM-DD') AS dia,
               COUNT(DISTINCT v.id) AS cantidad,
-              SUM(d.cantidad * d.precio_unitario) AS total
-         FROM ventas v
-         JOIN detalle_venta d ON d.venta_id = v.id
-        WHERE v.fecha >= TRUNC(SYSDATE) - :dias
-        GROUP BY TRUNC(v.fecha)`,
-      { dias: DIAS_GRAFICA - 1 }
+              COALESCE(SUM(d.cantidad * d.precio_unitario), 0) AS total
+         FROM generate_series(${HOY} - ($1::int - 1), ${HOY}, interval '1 day') AS dias(dia)
+         LEFT JOIN ventas v ON ${DIA_VENTA} = dias.dia::date
+         LEFT JOIN detalle_venta d ON d.venta_id = v.id
+        GROUP BY dias.dia
+        ORDER BY dias.dia`,
+      [DIAS_GRAFICA]
     ),
     db.query(
       `SELECT p.nombre AS producto, SUM(d.cantidad) AS unidades, SUM(d.cantidad * d.precio_unitario) AS total
          FROM detalle_venta d
          JOIN productos p ON p.id = d.producto_id
-        GROUP BY p.nombre
+        GROUP BY p.id, p.nombre
         ORDER BY total DESC
-        FETCH FIRST 5 ROWS ONLY`
+        LIMIT 5`
     ),
     db.query(
       `SELECT c.nombre AS categoria, SUM(d.cantidad * d.precio_unitario) AS total
          FROM detalle_venta d
          JOIN productos p ON p.id = d.producto_id
          JOIN categorias c ON c.id = p.categoria_id
-        GROUP BY c.nombre
+        GROUP BY c.id, c.nombre
         ORDER BY total DESC`
     ),
     db.query(
@@ -72,11 +65,10 @@ router.get('/resumen', async (req, res) => {
          FROM ventas v
          JOIN clientes cl ON cl.id = v.cliente_id
          JOIN detalle_venta d ON d.venta_id = v.id
-        GROUP BY cl.nombre
+        GROUP BY cl.id, cl.nombre
         ORDER BY total DESC
-        FETCH FIRST 5 ROWS ONLY`
+        LIMIT 5`
     ),
-    db.query(`SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD') AS hoy FROM DUAL`),
   ]);
 
   res.json({
@@ -84,7 +76,7 @@ router.get('/resumen', async (req, res) => {
     mes,
     ticket_promedio: total.cantidad ? total.total / total.cantidad : 0,
     stock: stock.rows[0],
-    por_dia: completarDias(fecha.rows[0].hoy, porDia.rows),
+    por_dia: porDia.rows,
     top_productos: topProductos.rows,
     por_categoria: porCategoria.rows,
     top_clientes: topClientes.rows,

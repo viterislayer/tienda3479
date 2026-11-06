@@ -1,7 +1,7 @@
 {
   "name": "tienda3479",
   "version": "1.0.0",
-  "description": "Pagina web conectada a la base Oracle DB_TIENDA3479",
+  "description": "Sistema de ventas con PostgreSQL normalizado (3FN), API REST en Node.js y pagina web",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -16,6 +16,6 @@
   "dependencies": {
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
-    "oracledb": "^26.0.0"
+    "pg": "^8.23.1"
   }
 }

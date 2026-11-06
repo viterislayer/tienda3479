@@ -1,36 +1,31 @@
-// Crea las tablas (sql/schema.sql) y carga los datos (sql/datos.sql)
+// Crea las tablas (sql/schema.sql) y carga los datos (sql/datos.sql) en una sola transacción
 // Uso: npm run db:init            -> tablas + datos
 //      npm run db:init -- --vacia -> solo tablas
 require('dotenv').config({ quiet: true });
 const fs = require('fs');
 const path = require('path');
-const oracledb = require('oracledb');
+const { Client } = require('pg');
+const { configuracion } = require('../src/db');
 
-function leerSentencias(archivo) {
-  return fs.readFileSync(path.join(__dirname, '..', 'sql', archivo), 'utf8')
-    .split(/;\s*$/m)
-    .map(s => s.replace(/^\s*--.*$/gm, '').trim())
-    .filter(Boolean);
-}
+const leer = archivo => fs.readFileSync(path.join(__dirname, '..', 'sql', archivo), 'utf8');
 
 async function main() {
   const archivos = process.argv.includes('--vacia') ? ['schema.sql'] : ['schema.sql', 'datos.sql'];
-
-  const conn = await oracledb.getConnection({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    connectString: process.env.DB_CONNECT_STRING,
-  });
+  const cliente = new Client(configuracion);
+  await cliente.connect();
   try {
+    await cliente.query('BEGIN');
     for (const archivo of archivos) {
-      const sentencias = leerSentencias(archivo);
-      for (const sentencia of sentencias) await conn.execute(sentencia);
-      console.log(`${archivo}: ${sentencias.length} sentencias ejecutadas.`);
+      await cliente.query(leer(archivo));
+      console.log(`${archivo} ejecutado.`);
     }
-    await conn.commit();
+    await cliente.query('COMMIT');
     console.log('Base inicializada.');
+  } catch (err) {
+    await cliente.query('ROLLBACK');
+    throw err;
   } finally {
-    await conn.close();
+    await cliente.end();
   }
 }
 

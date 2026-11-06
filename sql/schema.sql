@@ -1,44 +1,46 @@
--- Estructura normalizada (3FN) de la Tienda 3479 - Oracle 23ai
--- Se ejecuta con: npm run db:init (o en SQL Developer)
+-- Estructura normalizada (3FN) de la Tienda 3479 - PostgreSQL
+-- Se ejecuta con: npm run db:init
 -- ATENCION: borra y vuelve a crear las tablas.
 
-DROP TABLE IF EXISTS detalle_venta CASCADE CONSTRAINTS;
-DROP TABLE IF EXISTS ventas CASCADE CONSTRAINTS;
-DROP TABLE IF EXISTS productos CASCADE CONSTRAINTS;
-DROP TABLE IF EXISTS categorias CASCADE CONSTRAINTS;
-DROP TABLE IF EXISTS clientes CASCADE CONSTRAINTS;
+DROP TABLE IF EXISTS detalle_venta, ventas, productos, categorias, clientes CASCADE;
 
 CREATE TABLE categorias (
-  id      NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  nombre  VARCHAR2(50) NOT NULL UNIQUE
+  id      INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nombre  VARCHAR(50) NOT NULL UNIQUE
 );
 
 CREATE TABLE productos (
-  id            NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  nombre        VARCHAR2(100) NOT NULL,
-  precio        NUMBER(10,2) NOT NULL CHECK (precio >= 0),
-  stock         NUMBER DEFAULT 0 NOT NULL CHECK (stock >= 0),
-  categoria_id  NUMBER NOT NULL REFERENCES categorias (id)
+  id            INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nombre        VARCHAR(100) NOT NULL,
+  precio        NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+  stock         INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  categoria_id  INTEGER NOT NULL REFERENCES categorias (id)
 );
 
 CREATE TABLE clientes (
-  id       NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  nombre   VARCHAR2(100) NOT NULL,
-  nit_dpi  VARCHAR2(20) NOT NULL UNIQUE,
-  correo   VARCHAR2(100) UNIQUE
+  id       INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nombre   VARCHAR(100) NOT NULL,
+  nit_dpi  VARCHAR(20) NOT NULL UNIQUE,
+  correo   VARCHAR(100) UNIQUE
 );
 
 CREATE TABLE ventas (
-  id          NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  cliente_id  NUMBER NOT NULL REFERENCES clientes (id),
-  fecha       DATE DEFAULT SYSDATE NOT NULL
+  id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  cliente_id  INTEGER NOT NULL REFERENCES clientes (id),
+  fecha       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- precio_unitario guarda el precio al momento de la venta (si el producto cambia de precio, la venta no cambia)
 CREATE TABLE detalle_venta (
-  venta_id         NUMBER NOT NULL REFERENCES ventas (id) ON DELETE CASCADE,
-  producto_id      NUMBER NOT NULL REFERENCES productos (id),
-  cantidad         NUMBER NOT NULL CHECK (cantidad > 0),
-  precio_unitario  NUMBER(10,2) NOT NULL CHECK (precio_unitario >= 0),
+  venta_id         INTEGER NOT NULL REFERENCES ventas (id) ON DELETE CASCADE,
+  producto_id      INTEGER NOT NULL REFERENCES productos (id),
+  cantidad         INTEGER NOT NULL CHECK (cantidad > 0),
+  precio_unitario  NUMERIC(10,2) NOT NULL CHECK (precio_unitario >= 0),
   PRIMARY KEY (venta_id, producto_id)
 );
+
+-- Índices en las llaves foráneas para acelerar los JOIN
+CREATE INDEX idx_productos_categoria ON productos (categoria_id);
+CREATE INDEX idx_ventas_cliente ON ventas (cliente_id);
+CREATE INDEX idx_ventas_fecha ON ventas (fecha);
+CREATE INDEX idx_detalle_producto ON detalle_venta (producto_id);

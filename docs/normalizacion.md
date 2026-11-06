@@ -84,7 +84,8 @@ CLIENTES (id PK, nombre, nit_dpi UNIQUE, correo UNIQUE)
 - Una venta tiene muchos productos y un producto aparece en muchas ventas (N:M). **DETALLE_VENTA** resuelve esa relación.
 
 **Reglas de integridad del script** (`sql/schema.sql`):
-- Llaves primarias con `GENERATED ALWAYS AS IDENTITY` (Oracle genera el id).
+- Llaves primarias con `GENERATED ALWAYS AS IDENTITY` (PostgreSQL genera el id).
+- Índices en las llaves foráneas y en la fecha de venta para acelerar los JOIN y los reportes.
 - Llaves foráneas: no se puede vender a un cliente ni un producto que no existe.
 - `UNIQUE` en el nombre de categoría, en el NIT/DPI y en el correo.
 - `CHECK`: precio y stock no negativos, cantidad mayor que cero.

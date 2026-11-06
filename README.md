@@ -1,39 +1,53 @@
 # Tienda 3479
 
-Sistema de ventas con base de datos Oracle normalizada (3FN), API REST en Node.js y página web.
+Sistema de ventas con base de datos **PostgreSQL** normalizada (3FN), API REST en Node.js y página web.
 
 Incluye panel de resumen con gráfica de ventas, registro de ventas con control de stock,
 comprobante imprimible, buscador y exportación a CSV.
 
 **En línea:** https://187-127-254-87.sslip.io
 
-## Requisitos
+## Tecnologías
 
-- Node.js 20 o superior
-- Una base Oracle (local, en la nube o la que den en el examen)
+| Capa          | Tecnología                                   |
+|---------------|----------------------------------------------|
+| Base de datos | PostgreSQL 17                                |
+| Backend       | Node.js 20+, Express 5, `pg` (node-postgres) |
+| Frontend      | HTML, CSS y JavaScript (módulos ES), sin frameworks |
+| Producción    | Docker Compose, Caddy (HTTPS automático), VPS Ubuntu |
 
-## Cómo ejecutar
+## Cómo ejecutar en local
 
-1. Copiar `.env.example` como `.env` y poner las credenciales de la base.
-2. Instalar dependencias y crear las tablas con los datos de la tienda:
+1. Crear el usuario y la base (una sola vez, como administrador de PostgreSQL):
+
+```
+psql -U postgres -h localhost -v clave='LA_CONTRASEÑA' -f sql/crear-base.sql
+```
+
+2. Copiar `.env.example` como `.env` y poner esa misma contraseña en `DB_PASSWORD`.
+3. Instalar dependencias y crear las tablas con los datos de la tienda:
 
 ```
 npm install
 npm run db:init
 ```
 
-3. Arrancar y abrir http://localhost:3000
+4. Arrancar y abrir http://localhost:3000
 
 ```
 npm start
 ```
 
-`npm run db:init` borra y vuelve a crear las tablas (`sql/schema.sql`) y carga los datos (`sql/datos.sql`).
-Para crear solo las tablas vacías: `npm run db:init -- --vacia`. Ambos archivos también se pueden ejecutar en SQL Developer.
+`npm run db:init` borra y vuelve a crear las tablas (`sql/schema.sql`) y carga los datos (`sql/datos.sql`)
+en una sola transacción. Para crear solo las tablas vacías: `npm run db:init -- --vacia`.
 
 ## Base de datos
 
 `CATEGORIAS` 1─N `PRODUCTOS` 1─N `DETALLE_VENTA` N─1 `VENTAS` N─1 `CLIENTES`
+
+- Llaves primarias `GENERATED ALWAYS AS IDENTITY`, llaves foráneas, `UNIQUE` y `CHECK`.
+- Índices en las llaves foráneas y en la fecha de venta.
+- `ventas.fecha` es `TIMESTAMPTZ`; los reportes cuentan los días en hora de Guatemala.
 
 El paso a paso de la normalización (1FN, 2FN, 3FN) está en [docs/normalizacion.md](docs/normalizacion.md).
 
@@ -68,18 +82,25 @@ Ejemplos listos para probar en `requests.http` (extensión REST Client).
 ## Estructura
 
 ```
-sql/schema.sql         Tablas y restricciones
-sql/datos.sql          Datos de la tienda (categorías, productos, clientes)
+sql/
+  crear-base.sql       Usuario y base de datos (una sola vez)
+  schema.sql           Tablas, restricciones e índices
+  datos.sql            Datos de la tienda
 docs/normalizacion.md  Normalización paso a paso
 scripts/init-db.js     Ejecuta schema.sql y datos.sql (npm run db:init)
-src/server.js          Servidor Express y rutas
-src/db.js              Pool de conexiones y transacciones
-src/routes/crud.js     CRUD genérico para tablas simples
-src/routes/ventas.js   Ventas con transacción y control de stock
-src/routes/reportes.js Reportes con JOIN, GROUP BY y SUM
-src/validacion.js      Validación de datos recibidos
-src/errores.js         Errores claros (incluye errores de Oracle)
-public/                Página web (HTML, CSS y módulos JS)
+src/
+  server.js            Servidor Express y montaje de rutas
+  db.js                Pool de conexiones y transacciones
+  validacion.js        Validación de datos recibidos
+  errores.js           Errores claros (traduce los códigos de PostgreSQL)
+  routes/
+    crud.js            CRUD genérico para tablas simples
+    ventas.js          Ventas con transacción y control de stock
+    reportes.js        Reportes con JOIN, GROUP BY y generate_series
+public/
+  index.html           Página
+  styles.css           Estilos
+  js/                  Módulos: app, comun, resumen, ventas, crud
 requests.http          Ejemplos de llamadas a la API
 Dockerfile             Imagen de la app para producción
 docker-compose.yml     Servicio de producción
@@ -88,8 +109,8 @@ docker-compose.yml     Servicio de producción
 ## Producción
 
 VPS (Ubuntu 24.04) con Docker. La app corre en `/opt/tienda3479` y usa la infraestructura compartida
-del servidor (`/opt/infra`): Oracle 23ai Free (`oracle:1521`) y HTTPS con Caddy, unidos por la red `web`.
-En el servidor, `/opt/tienda3479/.env` define `DB_USER` y `DB_PASSWORD`.
+del servidor (`/opt/infra`): PostgreSQL 17 (`postgres:5432`) y HTTPS con Caddy, unidos por la red `web`.
+En el servidor, `/opt/tienda3479/.env` define `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
 
 Publicar cambios:
 
