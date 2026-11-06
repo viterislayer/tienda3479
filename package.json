@@ -4,7 +4,8 @@
   "description": "Pagina web conectada a la base Oracle DB_TIENDA3479",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "deploy": "git push && ssh tienda3479 \"cd /opt/tienda3479 && git pull -q && docker compose up -d --build\""
   },
   "engines": {
     "node": ">=20"

@@ -2,6 +2,8 @@
 
 Página web conectada a la base Oracle `DB_TIENDA3479` (Oracle 23ai Free, servicio `FREEPDB1`).
 
+**En línea:** https://187-127-254-87.sslip.io
+
 ## Requisitos
 
 - Node.js 20 o superior
@@ -20,9 +22,28 @@ npm start
 
 4. Abrir http://localhost:3000
 
+## Producción
+
+Servidor VPS (Ubuntu 24.04) con Docker Compose:
+
+- `oracle`: Oracle 23ai Free (puerto 1521)
+- `app`: servidor Node.js
+- `caddy`: HTTPS automático (puertos 80 y 443)
+
+En el servidor, `/opt/tienda3479/.env` define `DB_USER`, `DB_PASSWORD`, `ORACLE_ADMIN_PASSWORD` y `DOMAIN`.
+
+Publicar cambios:
+
+```
+npm run deploy
+```
+
 ## Estructura
 
 ```
+Dockerfile         Imagen de la app Node.js
+docker-compose.yml Servicios de producción (Oracle, app, HTTPS)
+Caddyfile          Configuración de HTTPS
 .env.example       Plantilla de credenciales (copiar como .env)
 sql/schema.sql     Creación de tablas y datos de ejemplo
 src/db.js          Pool de conexiones a Oracle
