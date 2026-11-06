@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tienda 3479</title>
+  <meta name="description" content="Sistema de ventas, compras, gastos y finanzas de la Tienda 3479">
+  <meta name="theme-color" content="#0d0e10">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f6f6f3'/%3E%3Cstop offset='1' stop-color='%238d9096'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='44' font-family='Segoe UI,Arial' font-size='34' font-weight='700' text-anchor='middle' fill='%23111214'%3ET%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -62,7 +65,10 @@
         </button>
       </nav>
 
-      <div id="estado" class="estado"><span class="punto" aria-hidden="true"></span><span id="estado-texto">Conectando...</span></div>
+      <div class="pie-barra">
+        <div id="estado" class="estado"><span class="punto" aria-hidden="true"></span><span id="estado-texto">Conectando...</span></div>
+        <p id="version" class="version"></p>
+      </div>
     </aside>
 
     <main class="contenido">
@@ -152,7 +158,7 @@
           <div class="tarjeta-cabecera">
             <h2>Historial de ventas</h2>
             <div class="herramientas">
-              <input id="ventas-buscar" type="search" placeholder="Buscar por cliente, número o fecha" aria-label="Buscar ventas">
+              <input id="ventas-buscar" type="search" placeholder="Buscar venta...  ( / )" aria-label="Buscar ventas">
               <button type="button" id="ventas-csv" class="secundario">Exportar CSV</button>
             </div>
           </div>
@@ -211,7 +217,7 @@
           <div class="tarjeta-cabecera">
             <h2>Historial de compras</h2>
             <div class="herramientas">
-              <input id="compras-buscar" type="search" placeholder="Buscar por proveedor, número o fecha" aria-label="Buscar compras">
+              <input id="compras-buscar" type="search" placeholder="Buscar compra...  ( / )" aria-label="Buscar compras">
               <button type="button" id="compras-csv" class="secundario">Exportar CSV</button>
             </div>
           </div>
@@ -285,7 +291,7 @@
           <div class="tarjeta-cabecera">
             <h2 id="crud-listado">Registros</h2>
             <div class="herramientas">
-              <input id="crud-buscar" type="search" placeholder="Buscar..." aria-label="Buscar registros">
+              <input id="crud-buscar" type="search" placeholder="Buscar...  ( / )" aria-label="Buscar registros">
               <button type="button" id="crud-csv" class="secundario">Exportar CSV</button>
             </div>
           </div>
@@ -305,6 +311,15 @@
     <div class="acciones derecha no-imprimir">
       <button type="button" id="btn-imprimir" class="secundario">Imprimir comprobante</button>
       <form method="dialog"><button class="primario">Cerrar</button></form>
+    </div>
+  </dialog>
+
+  <dialog id="modal-confirmar" class="modal confirmar" aria-labelledby="confirmar-titulo">
+    <h3 id="confirmar-titulo">¿Confirmar?</h3>
+    <p id="confirmar-texto" class="meta"></p>
+    <div class="acciones derecha">
+      <button type="button" id="confirmar-no" class="secundario">Cancelar</button>
+      <button type="button" id="confirmar-si" class="peligro-solido">Confirmar</button>
     </div>
   </dialog>
 

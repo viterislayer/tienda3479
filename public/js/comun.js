@@ -103,3 +103,64 @@ export function fechaCorta(valor) {
   const [a, m, d] = String(valor).split('-');
   return `${d}/${m}/${a}`;
 }
+
+// Ventana de confirmación con el diseño de la página (reemplaza al confirm() del navegador)
+export function confirmar({ titulo = '¿Confirmar?', texto = '', boton = 'Confirmar' } = {}) {
+  const modal = $('modal-confirmar');
+  $('confirmar-titulo').textContent = titulo;
+  $('confirmar-texto').textContent = texto;
+  $('confirmar-si').textContent = boton;
+  return new Promise(resolver => {
+    const cerrar = valor => {
+      modal.removeEventListener('close', alCerrar);
+      $('confirmar-si').onclick = $('confirmar-no').onclick = null;
+      if (modal.open) modal.close();
+      resolver(valor);
+    };
+    const alCerrar = () => cerrar(false);
+    modal.addEventListener('close', alCerrar);
+    $('confirmar-si').onclick = () => cerrar(true);
+    $('confirmar-no').onclick = () => cerrar(false);
+    modal.showModal();
+    $('confirmar-no').focus();
+  });
+}
+
+// Desactiva el botón y muestra un texto de carga mientras se ejecuta la acción
+export async function conCarga(boton, texto, accion) {
+  const original = boton.innerHTML;
+  boton.disabled = true;
+  boton.classList.add('cargando-btn');
+  boton.innerHTML = `<span class="spinner" aria-hidden="true"></span>${escapar(texto)}`;
+  try {
+    return await accion();
+  } finally {
+    boton.disabled = false;
+    boton.classList.remove('cargando-btn');
+    boton.innerHTML = original;
+  }
+}
+
+// "hace 5 min", "ayer", "hace 3 días"...; la fecha completa queda en el title
+const relativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+export function tiempoRelativo(valor) {
+  const segundos = Math.round((new Date(valor) - Date.now()) / 1000);
+  const unidades = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
+  for (const [unidad, tamano] of unidades) {
+    if (Math.abs(segundos) >= tamano) return relativo.format(Math.round(segundos / tamano), unidad);
+  }
+  return 'hace un momento';
+}
+
+export function celdaFecha(valor) {
+  return `<span title="${escapar(fecha(valor))}">${escapar(tiempoRelativo(valor))}</span>`;
+}
+
+// Resalta por un momento la fila recién creada o editada
+export function resaltarFila(contenedor, id) {
+  const fila = contenedor.querySelector(`tr[data-id="${id}"]`);
+  if (!fila) return;
+  fila.classList.add('fila-nueva');
+  fila.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setTimeout(() => fila.classList.remove('fila-nueva'), 2200);
+}

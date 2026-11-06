@@ -1,6 +1,6 @@
 import {
   api, $, escapar, moneda, fecha, aviso, opcionesSelect, filaVacia, filaCargando,
-  coincide, descargarCsv, hoyArchivo,
+  coincide, descargarCsv, hoyArchivo, confirmar, conCarga, celdaFecha, resaltarFila,
 } from './comun.js';
 
 let productos = [];
@@ -40,9 +40,9 @@ function pintarHistorial() {
   const visibles = filtradas();
   $('compras-lista').innerHTML = visibles.length
     ? visibles.map(c => `
-      <tr>
+      <tr data-id="${c.id}">
         <td class="id">${c.id}</td>
-        <td>${fecha(c.fecha)}</td>
+        <td>${celdaFecha(c.fecha)}</td>
         <td>${escapar(c.proveedor)}</td>
         <td class="num">${c.productos}</td>
         <td class="num"><strong>${moneda(c.total)}</strong></td>
@@ -76,24 +76,21 @@ function agregarLinea() {
 async function registrarCompra(e) {
   e.preventDefault();
   if (!lineas.length) return aviso('Agrega al menos un producto al detalle.', 'error');
-  const boton = e.submitter;
-  boton.disabled = true;
   try {
-    const compra = await api('/api/compras', {
+    const compra = await conCarga(e.submitter, 'Registrando...', () => api('/api/compras', {
       method: 'POST',
       body: JSON.stringify({
         proveedor_id: Number($('compra-proveedor').value),
         productos: lineas.map(l => ({ producto_id: l.producto_id, cantidad: l.cantidad, costo_unitario: l.costo })),
       }),
-    });
+    }));
     aviso(`Compra #${compra.id} registrada por ${moneda(compra.total)}. El stock se actualizó.`);
     lineas = [];
     $('compra-proveedor').value = '';
     await mostrarCompras();
+    resaltarFila($('compras-lista'), compra.id);
   } catch (err) {
     aviso(err.message, 'error');
-  } finally {
-    boton.disabled = false;
   }
 }
 
@@ -130,7 +127,8 @@ async function verDetalle(id) {
 }
 
 async function anular(id) {
-  if (!confirm(`¿Anular la compra #${id}? Se retirará del stock la mercadería que entró.`)) return;
+  const ok = await confirmar({ titulo: `¿Anular la compra #${id}?`, texto: 'Se retirará del stock la mercadería que entró.', boton: 'Anular compra' });
+  if (!ok) return;
   try {
     await api(`/api/compras/${id}`, { method: 'DELETE' });
     aviso(`Compra #${id} anulada.`);

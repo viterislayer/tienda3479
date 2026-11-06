@@ -117,7 +117,9 @@ function lista(id, filas, etiqueta, detalle) {
 }
 
 export async function mostrarResumen() {
-  const r = await api('/api/reportes/resumen');
+  const franja = document.querySelector('#vista-resumen .indicadores');
+  if (!dias.length) franja.classList.add('esqueleto');
+  const r = await api('/api/reportes/resumen').finally(() => franja.classList.remove('esqueleto'));
   dias = r.por_dia;
 
   $('r-ingresos').textContent = moneda(r.mes.total);

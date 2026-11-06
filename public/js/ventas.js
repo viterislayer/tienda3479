@@ -1,6 +1,6 @@
 import {
   api, $, escapar, moneda, fecha, aviso, opcionesSelect, filaVacia, filaCargando,
-  coincide, descargarCsv, hoyArchivo,
+  coincide, descargarCsv, hoyArchivo, confirmar, conCarga, celdaFecha, resaltarFila,
 } from './comun.js';
 
 let productos = [];
@@ -41,9 +41,9 @@ function pintarHistorial() {
   const visibles = filtradas();
   $('ventas-lista').innerHTML = visibles.length
     ? visibles.map(v => `
-      <tr>
+      <tr data-id="${v.id}">
         <td class="id">${v.id}</td>
-        <td>${fecha(v.fecha)}</td>
+        <td>${celdaFecha(v.fecha)}</td>
         <td>${escapar(v.cliente)}</td>
         <td class="num">${v.productos}</td>
         <td class="num"><strong>${moneda(v.total)}</strong></td>
@@ -74,25 +74,22 @@ function agregarLinea() {
 async function registrarVenta(e) {
   e.preventDefault();
   if (!lineas.length) return aviso('Agrega al menos un producto al detalle.', 'error');
-  const boton = e.submitter;
-  boton.disabled = true;
   try {
-    const venta = await api('/api/ventas', {
+    const venta = await conCarga(e.submitter, 'Registrando...', () => api('/api/ventas', {
       method: 'POST',
       body: JSON.stringify({
         cliente_id: Number($('venta-cliente').value),
         productos: lineas.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })),
       }),
-    });
+    }));
     aviso(`Venta #${venta.id} registrada por ${moneda(venta.total)}.`);
     lineas = [];
     $('venta-cliente').value = '';
     await mostrarVentas();
+    resaltarFila($('ventas-lista'), venta.id);
     verComprobante(venta.id);
   } catch (err) {
     aviso(err.message, 'error');
-  } finally {
-    boton.disabled = false;
   }
 }
 
@@ -129,7 +126,8 @@ async function verComprobante(id) {
 }
 
 async function anular(id) {
-  if (!confirm(`¿Anular la venta #${id}? El stock regresará a los productos.`)) return;
+  const ok = await confirmar({ titulo: `¿Anular la venta #${id}?`, texto: 'El stock regresará a los productos y la venta saldrá de los ingresos.', boton: 'Anular venta' });
+  if (!ok) return;
   try {
     await api(`/api/ventas/${id}`, { method: 'DELETE' });
     aviso(`Venta #${id} anulada.`);

@@ -1,6 +1,6 @@
 {
   "name": "tienda3479",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Sistema de ventas con Oracle normalizado (3FN), API REST en Node.js y pagina web",
   "main": "src/server.js",
   "scripts": {

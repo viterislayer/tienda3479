@@ -1,6 +1,6 @@
 import {
   api, $, escapar, moneda, aviso, opcionesSelect, insigniaStock, filaVacia, filaCargando,
-  coincide, descargarCsv, hoyArchivo, fechaHoy, fechaCorta,
+  coincide, descargarCsv, hoyArchivo, fechaHoy, fechaCorta, confirmar, conCarga, resaltarFila,
 } from './comun.js';
 
 // Configuración de cada tabla administrable desde la página
@@ -69,6 +69,7 @@ let nombreTabla = null;
 let config = null;
 let filas = [];
 let editandoId = null;
+let orden = { col: 'id', asc: true };
 
 const valorVisible = (campo, fila) => fila[campo.mostrar || campo.col];
 
@@ -109,8 +110,34 @@ function limpiar() {
   $('crud-cancelar').hidden = true;
 }
 
+// Ordena por la columna elegida: números como números y textos sin importar tildes ni mayúsculas
+function ordenar(lista) {
+  const campo = config.campos.find(c => c.col === orden.col);
+  const valor = f => (campo ? valorVisible(campo, f) : f.id) ?? '';
+  return [...lista].sort((a, b) => {
+    const [x, y] = [valor(a), valor(b)];
+    const resultado = typeof x === 'number' && typeof y === 'number'
+      ? x - y
+      : String(x).localeCompare(String(y), 'es', { sensitivity: 'base' });
+    return orden.asc ? resultado : -resultado;
+  });
+}
+
 function filtradas() {
-  return filas.filter(f => coincide(f, $('crud-buscar').value, [f2 => f2.id, ...config.campos.map(c => f2 => valorVisible(c, f2))]));
+  const busqueda = $('crud-buscar').value;
+  return ordenar(filas.filter(f => coincide(f, busqueda, [x => x.id, ...config.campos.map(c => x => valorVisible(c, x))])));
+}
+
+function pintarCabecera() {
+  const th = (col, etiqueta, num) => {
+    const activa = orden.col === col;
+    const sentido = activa ? (orden.asc ? 'ascending' : 'descending') : 'none';
+    const flecha = activa ? (orden.asc ? '▲' : '▼') : '↕';
+    return `<th class="${num ? 'num' : ''}" aria-sort="${sentido}">
+      <button type="button" class="ordenar ${activa ? 'activa' : ''}" data-col="${col}">${etiqueta}<span class="flecha" aria-hidden="true">${flecha}</span></button>
+    </th>`;
+  };
+  $('crud-cabecera').innerHTML = `<tr>${th('id', '#', false)}${config.campos.map(c => th(c.col, c.etiqueta, c.num)).join('')}<th><span class="sr-only">Acciones</span></th></tr>`;
 }
 
 function pintarFilas() {
@@ -119,7 +146,7 @@ function pintarFilas() {
   $('crud-listado').textContent = `${config.plural} (${visibles.length}${visibles.length !== filas.length ? ` de ${filas.length}` : ''})`;
   $('crud-filas').innerHTML = visibles.length
     ? visibles.map(f => `
-      <tr>
+      <tr data-id="${f.id}">
         <td class="id">${f.id}</td>
         ${config.campos.map(c => celda(c, f)).join('')}
         <td class="botones">
@@ -132,8 +159,7 @@ function pintarFilas() {
 
 async function cargar() {
   const columnas = config.campos.length + 2;
-  $('crud-cabecera').innerHTML = `<tr><th>#</th>${config.campos
-    .map(c => `<th class="${c.num ? 'num' : ''}">${c.etiqueta}</th>`).join('')}<th><span class="sr-only">Acciones</span></th></tr>`;
+  pintarCabecera();
   $('crud-filas').innerHTML = filaCargando(columnas);
   try {
     filas = await api(config.ruta);
@@ -154,7 +180,12 @@ function editar(id) {
 }
 
 async function eliminar(id) {
-  if (!confirm(`¿Eliminar ${config.singular} #${id}?`)) return;
+  const ok = await confirmar({
+    titulo: `¿Eliminar ${config.singular} #${id}?`,
+    texto: 'Esta acción no se puede deshacer.',
+    boton: 'Eliminar',
+  });
+  if (!ok) return;
   try {
     await api(`${config.ruta}/${id}`, { method: 'DELETE' });
     if (editandoId === id) limpiar();
@@ -172,18 +203,17 @@ async function guardar(e) {
     const valor = e.target.elements[c.col].value.trim();
     datos[c.col] = valor === '' ? null : (c.tipo === 'number' || c.tipo === 'select') ? Number(valor) : valor;
   }
-  const boton = e.submitter;
-  boton.disabled = true;
+  const editando = editandoId;
   try {
-    const url = editandoId ? `${config.ruta}/${editandoId}` : config.ruta;
-    await api(url, { method: editandoId ? 'PUT' : 'POST', body: JSON.stringify(datos) });
-    aviso(editandoId ? 'Cambios guardados.' : `${config.singular[0].toUpperCase()}${config.singular.slice(1)} registrado.`);
+    const registro = await conCarga(e.submitter, 'Guardando...', () =>
+      api(editando ? `${config.ruta}/${editando}` : config.ruta, { method: editando ? 'PUT' : 'POST', body: JSON.stringify(datos) })
+    );
+    aviso(editando ? 'Cambios guardados.' : `${config.singular[0].toUpperCase()}${config.singular.slice(1)} registrado.`);
     limpiar();
-    cargar();
+    await cargar();
+    resaltarFila($('crud-filas'), registro.id);
   } catch (err) {
     aviso(err.message, 'error');
-  } finally {
-    boton.disabled = false;
   }
 }
 
@@ -198,6 +228,7 @@ function exportar() {
 export async function mostrarCrud(nombre) {
   nombreTabla = nombre;
   config = TABLAS[nombre];
+  orden = { col: 'id', asc: true };
   $('crud-buscar').value = '';
   await pintarFormulario();
   await cargar();
@@ -208,6 +239,13 @@ export function iniciarCrud() {
   $('crud-cancelar').addEventListener('click', limpiar);
   $('crud-buscar').addEventListener('input', pintarFilas);
   $('crud-csv').addEventListener('click', exportar);
+  $('crud-cabecera').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-col]');
+    if (!btn) return;
+    orden = { col: btn.dataset.col, asc: orden.col === btn.dataset.col ? !orden.asc : true };
+    pintarCabecera();
+    pintarFilas();
+  });
   $('crud-filas').addEventListener('click', e => {
     const btn = e.target.closest('button[data-accion]');
     if (!btn) return;

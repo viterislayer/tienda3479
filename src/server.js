@@ -8,24 +8,28 @@ const compras = require('./routes/compras');
 const finanzas = require('./routes/finanzas');
 const reportes = require('./routes/reportes');
 const { manejarErrores } = require('./errores');
+const { seguridad, cors, registro } = require('./middleware');
+const { version } = require('../package.json');
 
 const app = express();
-app.use(express.json());
-
-// Permite llamar a la API desde otros orígenes (Postman, otras apps)
-app.use((req, res, next) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
-  next();
-});
-
+app.disable('x-powered-by');
+app.use(seguridad);
+app.use(registro);
+app.use(cors);
+app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Estado del sistema: conexión, versión y tiempo de respuesta de la base
 app.get('/api/estado', async (req, res) => {
+  const inicio = Date.now();
   const { rows } = await db.query(`SELECT USER AS usuario, SYS_CONTEXT('USERENV', 'CON_NAME') AS base FROM DUAL`);
-  res.json({ conectado: true, ...rows[0] });
+  res.json({
+    conectado: true,
+    ...rows[0],
+    version,
+    latencia_ms: Date.now() - inicio,
+    activo_desde: new Date(Date.now() - process.uptime() * 1000).toISOString(),
+  });
 });
 
 app.use('/api/categorias', crearCrud({
@@ -89,17 +93,23 @@ app.use('/api', (req, res) => {
 
 app.use(manejarErrores);
 
+let servidor;
 db.init()
   .then(() => {
     const port = process.env.PORT || 3000;
-    app.listen(port, () => console.log(`Servidor listo en http://localhost:${port}`));
+    servidor = app.listen(port, () => console.log(`Tienda 3479 v${version} lista en http://localhost:${port}`));
   })
   .catch(err => {
     console.error('No se pudo conectar a Oracle:', err.message);
     process.exit(1);
   });
 
-process.on('SIGINT', async () => {
+// Apagado ordenado (Docker envía SIGTERM): deja terminar las peticiones en curso y cierra el pool
+async function apagar(senal) {
+  console.log(`${senal} recibido: cerrando el servidor...`);
+  servidor?.close();
   await db.close().catch(() => {});
   process.exit(0);
-});
+}
+process.on('SIGTERM', () => apagar('SIGTERM'));
+process.on('SIGINT', () => apagar('SIGINT'));

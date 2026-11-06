@@ -232,3 +232,48 @@ nav button:focus-visible { outline-color: rgba(255, 255, 255, .5); }
   .rejilla-venta { grid-template-columns: 1fr; }
   .herramientas, .herramientas input { width: 100%; }
 }
+
+/* ---------- Detalles de interfaz ---------- */
+
+/* Pie de la barra lateral: estado y versión */
+.pie-barra { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+.pie-barra .estado { margin-top: 0; }
+.version { margin: 0; padding: 0 12px; color: #5d6066; font-size: .72rem; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+
+/* Ventana de confirmación */
+.modal.confirmar { width: min(420px, 92vw); }
+.modal.confirmar h3 { font-size: 1.15rem; }
+.modal.confirmar .meta { margin-top: 8px; line-height: 1.5; }
+.peligro-solido { background: #b4544d; color: #fff; }
+.peligro-solido:hover { background: #9f463f; }
+
+/* Botón con carga */
+.spinner { display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: girar .7s linear infinite; }
+.cargando-btn { cursor: progress; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Encabezados de tabla ordenables */
+.ordenar { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; }
+.ordenar:hover { color: var(--texto); }
+.ordenar:focus-visible { outline: 2px solid var(--titanio); outline-offset: 3px; border-radius: 4px; }
+.ordenar .flecha { font-size: .65rem; opacity: .45; }
+.ordenar.activa { color: var(--texto); }
+.ordenar.activa .flecha { opacity: 1; }
+.tabla th.num .ordenar { flex-direction: row-reverse; }
+
+/* Fila recién creada */
+.fila-nueva td { animation: resaltar 2.2s ease-out; }
+@keyframes resaltar { 0%, 30% { background: rgba(220, 220, 215, .12); } 100% { background: transparent; } }
+
+/* Indicadores mientras cargan */
+.indicadores.esqueleto strong, .indicadores.esqueleto small { color: transparent; border-radius: 6px; background: linear-gradient(90deg, var(--superficie-2) 25%, #2a2c31 50%, var(--superficie-2) 75%); background-size: 200% 100%; animation: brillo 1.2s ease-in-out infinite; }
+@keyframes brillo { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner, .indicadores.esqueleto strong, .indicadores.esqueleto small, .fila-nueva td { animation: none; }
+}
+
+@media (max-width: 900px) {
+  .pie-barra { margin-top: 0; flex-direction: row; align-items: center; }
+  .version { display: none; }
+}
