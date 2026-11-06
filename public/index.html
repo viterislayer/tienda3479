@@ -10,7 +10,7 @@
   <div class="app">
     <aside class="barra">
       <div class="marca">
-        <span class="logo">T</span>
+        <span class="logo" aria-hidden="true">T</span>
         <div>
           <strong>Tienda 3479</strong>
           <small>Sistema de ventas</small>
@@ -18,7 +18,11 @@
       </div>
 
       <nav id="pestanas" aria-label="Secciones">
-        <button data-vista="ventas" class="activa" aria-current="page">
+        <button data-vista="resumen" class="activa" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
+          Resumen
+        </button>
+        <button data-vista="ventas">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.8h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>
           Ventas
         </button>
@@ -36,32 +40,57 @@
         </button>
       </nav>
 
-      <div id="estado" class="estado"><span class="punto"></span><span id="estado-texto">Conectando...</span></div>
+      <div id="estado" class="estado"><span class="punto" aria-hidden="true"></span><span id="estado-texto">Conectando...</span></div>
     </aside>
 
     <main class="contenido">
       <header class="encabezado">
-        <h1 id="titulo">Ventas</h1>
-        <p id="subtitulo">Registra ventas y consulta el historial</p>
+        <div>
+          <p id="fecha-hoy" class="sobretitulo"></p>
+          <h1 id="titulo">Resumen</h1>
+          <p id="subtitulo">Indicadores del negocio en tiempo real</p>
+        </div>
       </header>
 
-      <!-- Ventas -->
-      <section id="vista-ventas">
-        <div class="indicadores">
-          <div class="indicador">
-            <span>Ventas registradas</span>
-            <strong id="kpi-ventas">0</strong>
-          </div>
-          <div class="indicador">
-            <span>Ingresos totales</span>
-            <strong id="kpi-ingresos">Q 0.00</strong>
-          </div>
-          <div class="indicador">
-            <span>Productos con stock bajo</span>
-            <strong id="kpi-stock">0</strong>
-          </div>
+      <!-- Resumen -->
+      <section id="vista-resumen">
+        <div class="indicadores cuatro">
+          <div class="indicador"><span>Ventas de hoy</span><strong id="r-hoy">—</strong><small id="r-hoy-monto"></small></div>
+          <div class="indicador"><span>Ingresos del mes</span><strong id="r-mes">—</strong><small id="r-mes-ventas"></small></div>
+          <div class="indicador"><span>Ticket promedio</span><strong id="r-ticket">—</strong><small>por venta</small></div>
+          <div class="indicador"><span>Inventario</span><strong id="r-stock">—</strong><small id="r-stock-detalle"></small></div>
         </div>
 
+        <div class="tarjeta">
+          <div class="tarjeta-cabecera">
+            <div>
+              <h2>Ventas de los últimos 14 días</h2>
+              <p class="nota">Monto vendido por día, en quetzales</p>
+            </div>
+          </div>
+          <div id="grafica" class="grafica"></div>
+          <div id="grafica-tooltip" class="tooltip" hidden></div>
+          <table id="grafica-tabla" class="sr-only"></table>
+        </div>
+
+        <div class="rejilla-tres">
+          <div class="tarjeta">
+            <h2>Productos más vendidos</h2>
+            <ul id="r-productos" class="barras"></ul>
+          </div>
+          <div class="tarjeta">
+            <h2>Ventas por categoría</h2>
+            <ul id="r-categorias" class="barras"></ul>
+          </div>
+          <div class="tarjeta">
+            <h2>Mejores clientes</h2>
+            <ul id="r-clientes" class="barras"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ventas -->
+      <section id="vista-ventas" hidden>
         <div class="rejilla-venta">
           <div class="tarjeta">
             <h2>Nueva venta</h2>
@@ -75,11 +104,11 @@
               <label>Cantidad
                 <input id="venta-cantidad" type="number" min="1" step="1" value="1">
               </label>
-              <button type="button" id="btn-agregar" class="secundario">+ Agregar al detalle</button>
+              <button type="button" id="btn-agregar" class="secundario">Agregar al detalle</button>
             </form>
           </div>
 
-          <div class="tarjeta resumen">
+          <div class="tarjeta resumen-venta">
             <h2>Detalle de la venta</h2>
             <div class="tabla-contenedor">
               <table class="tabla compacta">
@@ -98,7 +127,13 @@
         </div>
 
         <div class="tarjeta">
-          <h2>Historial de ventas</h2>
+          <div class="tarjeta-cabecera">
+            <h2>Historial de ventas</h2>
+            <div class="herramientas">
+              <input id="ventas-buscar" type="search" placeholder="Buscar por cliente, número o fecha" aria-label="Buscar ventas">
+              <button type="button" id="ventas-csv" class="secundario">Exportar CSV</button>
+            </div>
+          </div>
           <div class="tabla-contenedor">
             <table class="tabla">
               <thead>
@@ -123,6 +158,13 @@
           </form>
         </div>
         <div class="tarjeta">
+          <div class="tarjeta-cabecera">
+            <h2 id="crud-listado">Registros</h2>
+            <div class="herramientas">
+              <input id="crud-buscar" type="search" placeholder="Buscar..." aria-label="Buscar registros">
+              <button type="button" id="crud-csv" class="secundario">Exportar CSV</button>
+            </div>
+          </div>
           <div class="tabla-contenedor">
             <table class="tabla">
               <thead id="crud-cabecera"></thead>
@@ -136,9 +178,10 @@
 
   <dialog id="modal-venta" class="modal">
     <div id="venta-detalle"></div>
-    <form method="dialog" class="acciones derecha">
-      <button class="secundario">Cerrar</button>
-    </form>
+    <div class="acciones derecha no-imprimir">
+      <button type="button" id="btn-imprimir" class="secundario">Imprimir comprobante</button>
+      <form method="dialog"><button class="primario">Cerrar</button></form>
+    </div>
   </dialog>
 
   <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>

@@ -1,14 +1,16 @@
 import { api, $, aviso } from './comun.js';
 import { iniciarCrud, mostrarCrud } from './crud.js';
 import { iniciarVentas, mostrarVentas } from './ventas.js';
+import { iniciarResumen, mostrarResumen } from './resumen.js';
 
 const SERVIDOR_LOCAL = 'http://localhost:3000';
 
 const VISTAS = {
-  ventas: ['Ventas', 'Registra ventas y consulta el historial'],
-  productos: ['Productos', 'Catálogo, precios y existencias'],
-  categorias: ['Categorías', 'Clasificación de los productos'],
-  clientes: ['Clientes', 'Datos de facturación de los clientes'],
+  resumen: ['Resumen', 'Indicadores del negocio en tiempo real', mostrarResumen],
+  ventas: ['Ventas', 'Registra ventas y consulta el historial', mostrarVentas],
+  productos: ['Productos', 'Catálogo, precios y existencias', () => mostrarCrud('productos')],
+  categorias: ['Categorías', 'Clasificación de los productos', () => mostrarCrud('categorias')],
+  clientes: ['Clientes', 'Datos de facturación de los clientes', () => mostrarCrud('clientes')],
 };
 
 async function verificarEstado() {
@@ -27,24 +29,30 @@ async function verificarEstado() {
 }
 
 async function mostrarVista(nombre) {
-  if (!VISTAS[nombre]) nombre = 'ventas';
+  if (!VISTAS[nombre]) nombre = 'resumen';
+  const [titulo, subtitulo, mostrar] = VISTAS[nombre];
   history.replaceState(null, '', `#${nombre}`);
   document.querySelectorAll('#pestanas button').forEach(b => {
     const activa = b.dataset.vista === nombre;
     b.classList.toggle('activa', activa);
     activa ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current');
   });
-  [$('titulo').textContent, $('subtitulo').textContent] = VISTAS[nombre];
+  $('titulo').textContent = titulo;
+  $('subtitulo').textContent = subtitulo;
+  document.title = `${titulo} · Tienda 3479`;
+  $('vista-resumen').hidden = nombre !== 'resumen';
   $('vista-ventas').hidden = nombre !== 'ventas';
-  $('vista-crud').hidden = nombre === 'ventas';
+  $('vista-crud').hidden = !['productos', 'categorias', 'clientes'].includes(nombre);
   try {
-    await (nombre === 'ventas' ? mostrarVentas() : mostrarCrud(nombre));
+    await mostrar();
   } catch (err) {
     aviso(err.message, 'error');
   }
 }
 
 (async () => {
+  $('fecha-hoy').textContent = new Date().toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  iniciarResumen();
   iniciarCrud();
   iniciarVentas();
   $('pestanas').addEventListener('click', e => {

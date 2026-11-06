@@ -1,6 +1,10 @@
-import { api, $, escapar, moneda, fecha, aviso, opcionesSelect, filaVacia, filaCargando, STOCK_BAJO } from './comun.js';
+import {
+  api, $, escapar, moneda, fecha, aviso, opcionesSelect, filaVacia, filaCargando,
+  coincide, descargarCsv, hoyArchivo,
+} from './comun.js';
 
 let productos = [];
+let ventas = [];
 let lineas = []; // { producto_id, nombre, precio, cantidad }
 
 function pintarLineas() {
@@ -10,16 +14,18 @@ function pintarLineas() {
         <td>${escapar(l.nombre)}<br><small class="id">${moneda(l.precio)} c/u</small></td>
         <td class="num">${l.cantidad}</td>
         <td class="num">${moneda(l.precio * l.cantidad)}</td>
-        <td class="botones"><button type="button" class="boton-tabla peligro" data-quitar="${i}">Quitar</button></td>
+        <td class="botones"><button type="button" class="boton-tabla peligro" data-quitar="${i}" aria-label="Quitar ${escapar(l.nombre)}">Quitar</button></td>
       </tr>`).join('')
     : filaVacia(4, 'Agrega productos para armar la venta.');
   $('venta-total').textContent = moneda(lineas.reduce((t, l) => t + l.precio * l.cantidad, 0));
 }
 
 function pintarSelects(clientes) {
+  const clienteActual = $('venta-cliente').value;
   $('venta-cliente').innerHTML = clientes.length
     ? '<option value="">Seleccione un cliente...</option>' + opcionesSelect(clientes, c => `${c.nombre} · NIT/DPI ${c.nit_dpi}`)
     : '<option value="">Primero registra un cliente</option>';
+  if (clientes.some(c => String(c.id) === clienteActual)) $('venta-cliente').value = clienteActual;
 
   const disponibles = productos.filter(p => p.stock > 0);
   $('venta-producto').innerHTML = disponibles.length
@@ -27,15 +33,14 @@ function pintarSelects(clientes) {
     : '<option value="">No hay productos con stock</option>';
 }
 
-function pintarIndicadores(ventas) {
-  $('kpi-ventas').textContent = ventas.length;
-  $('kpi-ingresos').textContent = moneda(ventas.reduce((t, v) => t + v.total, 0));
-  $('kpi-stock').textContent = productos.filter(p => p.stock <= STOCK_BAJO).length;
+function filtradas() {
+  return ventas.filter(v => coincide(v, $('ventas-buscar').value, [x => x.id, x => x.cliente, x => fecha(x.fecha)]));
 }
 
-function pintarHistorial(ventas) {
-  $('ventas-lista').innerHTML = ventas.length
-    ? ventas.map(v => `
+function pintarHistorial() {
+  const visibles = filtradas();
+  $('ventas-lista').innerHTML = visibles.length
+    ? visibles.map(v => `
       <tr>
         <td class="id">${v.id}</td>
         <td>${fecha(v.fecha)}</td>
@@ -43,11 +48,11 @@ function pintarHistorial(ventas) {
         <td class="num">${v.productos}</td>
         <td class="num"><strong>${moneda(v.total)}</strong></td>
         <td class="botones">
-          <button class="boton-tabla" data-accion="ver" data-id="${v.id}">Ver detalle</button>
+          <button class="boton-tabla" data-accion="ver" data-id="${v.id}">Comprobante</button>
           <button class="boton-tabla peligro" data-accion="anular" data-id="${v.id}">Anular</button>
         </td>
       </tr>`).join('')
-    : filaVacia(6, 'Aún no hay ventas registradas.');
+    : filaVacia(6, ventas.length ? 'Ninguna venta coincide con la búsqueda.' : 'Aún no hay ventas registradas.');
 }
 
 function agregarLinea() {
@@ -81,7 +86,9 @@ async function registrarVenta(e) {
     });
     aviso(`Venta #${venta.id} registrada por ${moneda(venta.total)}.`);
     lineas = [];
+    $('venta-cliente').value = '';
     await mostrarVentas();
+    verComprobante(venta.id);
   } catch (err) {
     aviso(err.message, 'error');
   } finally {
@@ -89,12 +96,18 @@ async function registrarVenta(e) {
   }
 }
 
-async function verDetalle(id) {
+async function verComprobante(id) {
   try {
     const v = await api(`/api/ventas/${id}`);
     $('venta-detalle').innerHTML = `
-      <h3>Venta #${v.id}</h3>
-      <p class="meta">${fecha(v.fecha)} · ${escapar(v.cliente)} · NIT/DPI ${escapar(v.nit_dpi)}</p>
+      <div class="comprobante-cabecera">
+        <div>
+          <h3>Comprobante de venta #${v.id}</h3>
+          <p class="meta">${fecha(v.fecha)}</p>
+        </div>
+        <div class="tienda"><strong>Tienda 3479</strong>Sistema de ventas</div>
+      </div>
+      <p class="meta">Cliente: <strong>${escapar(v.cliente)}</strong> · NIT/DPI ${escapar(v.nit_dpi)}</p>
       <div class="tabla-contenedor">
         <table class="tabla">
           <thead><tr><th>Producto</th><th class="num">Precio unitario</th><th class="num">Cantidad</th><th class="num">Subtotal</th></tr></thead>
@@ -126,21 +139,34 @@ async function anular(id) {
   }
 }
 
+function exportar() {
+  descargarCsv(`ventas-${hoyArchivo()}.csv`, [
+    { titulo: 'Venta', valor: v => v.id },
+    { titulo: 'Fecha', valor: v => fecha(v.fecha) },
+    { titulo: 'Cliente', valor: v => v.cliente },
+    { titulo: 'Productos', valor: v => v.productos },
+    { titulo: 'Total (Q)', valor: v => v.total.toFixed(2) },
+  ], filtradas());
+}
+
 export async function mostrarVentas() {
   if (!$('ventas-lista').children.length) $('ventas-lista').innerHTML = filaCargando(6);
-  const [clientes, listaProductos, ventas] = await Promise.all([
+  const [clientes, listaProductos, listaVentas] = await Promise.all([
     api('/api/clientes'), api('/api/productos'), api('/api/ventas'),
   ]);
   productos = listaProductos;
+  ventas = listaVentas;
   pintarSelects(clientes);
-  pintarIndicadores(ventas);
-  pintarHistorial(ventas);
+  pintarHistorial();
   pintarLineas();
 }
 
 export function iniciarVentas() {
   $('btn-agregar').addEventListener('click', agregarLinea);
   $('form-venta').addEventListener('submit', registrarVenta);
+  $('ventas-buscar').addEventListener('input', pintarHistorial);
+  $('ventas-csv').addEventListener('click', exportar);
+  $('btn-imprimir').addEventListener('click', () => window.print());
   $('venta-lineas').addEventListener('click', e => {
     const btn = e.target.closest('button[data-quitar]');
     if (!btn) return;
@@ -151,6 +177,6 @@ export function iniciarVentas() {
     const btn = e.target.closest('button[data-accion]');
     if (!btn) return;
     const id = Number(btn.dataset.id);
-    btn.dataset.accion === 'ver' ? verDetalle(id) : anular(id);
+    btn.dataset.accion === 'ver' ? verComprobante(id) : anular(id);
   });
 }

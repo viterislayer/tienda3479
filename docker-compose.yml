@@ -7,6 +7,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_CONNECT_STRING: oracle:1521/FREEPDB1
       PORT: 3000
+      TZ: America/Guatemala
     networks:
       web:
         aliases:

@@ -3,6 +3,9 @@
 ### Estado de la conexion
 GET {{base}}/estado
 
+### Resumen del negocio (indicadores, ventas por dia, rankings)
+GET {{base}}/reportes/resumen
+
 ### ---------- Categorias ----------
 GET {{base}}/categorias
 

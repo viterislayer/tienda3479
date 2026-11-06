@@ -56,8 +56,35 @@ export function aviso(mensaje, tipo = 'ok') {
   temporizador = setTimeout(() => { caja.hidden = true; }, 4000);
 }
 
-export function opcionesSelect(items, texto, seleccionado) {
-  return items.map(item =>
-    `<option value="${item.id}" ${item.id === seleccionado ? 'selected' : ''}>${escapar(texto(item))}</option>`
-  ).join('');
+export function opcionesSelect(items, texto) {
+  return items.map(item => `<option value="${item.id}">${escapar(texto(item))}</option>`).join('');
+}
+
+// Texto en minúsculas y sin tildes, para buscar sin importar acentos
+export function normalizar(texto) {
+  return String(texto ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+export function coincide(fila, busqueda, campos) {
+  const termino = normalizar(busqueda.trim());
+  return !termino || campos.some(campo => normalizar(campo(fila)).includes(termino));
+}
+
+// Descarga un archivo CSV que Excel abre con tildes correctas (BOM UTF-8)
+export function descargarCsv(nombreArchivo, columnas, filas) {
+  const celda = valor => `"${String(valor ?? '').replace(/"/g, '""')}"`;
+  const lineas = [
+    columnas.map(c => celda(c.titulo)).join(','),
+    ...filas.map(fila => columnas.map(c => celda(c.valor(fila))).join(',')),
+  ];
+  const archivo = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const enlace = document.createElement('a');
+  enlace.href = URL.createObjectURL(archivo);
+  enlace.download = nombreArchivo;
+  enlace.click();
+  URL.revokeObjectURL(enlace.href);
+}
+
+export function hoyArchivo() {
+  return new Date().toISOString().slice(0, 10);
 }

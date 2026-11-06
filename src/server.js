@@ -4,6 +4,7 @@ const express = require('express');
 const db = require('./db');
 const crearCrud = require('./routes/crud');
 const ventas = require('./routes/ventas');
+const reportes = require('./routes/reportes');
 const { manejarErrores } = require('./errores');
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/clientes', crearCrud({
 }));
 
 app.use('/api/ventas', ventas);
+app.use('/api/reportes', reportes);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });

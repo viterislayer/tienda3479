@@ -2,6 +2,9 @@
 
 Sistema de ventas con base de datos Oracle normalizada (3FN), API REST en Node.js y página web.
 
+Incluye panel de resumen con gráfica de ventas, registro de ventas con control de stock,
+comprobante imprimible, buscador y exportación a CSV.
+
 **En línea:** https://187-127-254-87.sslip.io
 
 ## Requisitos
@@ -48,6 +51,7 @@ El paso a paso de la normalización (1FN, 2FN, 3FN) está en [docs/normalizacion
 | GET    | /api/ventas/:id        | Venta con su detalle                           |
 | POST   | /api/ventas            | Registrar venta (descuenta stock)              |
 | DELETE | /api/ventas/:id        | Anular venta (devuelve stock)                  |
+| GET    | /api/reportes/resumen  | Indicadores, ventas por día y rankings         |
 
 Cuerpos JSON:
 
@@ -72,6 +76,7 @@ src/server.js          Servidor Express y rutas
 src/db.js              Pool de conexiones y transacciones
 src/routes/crud.js     CRUD genérico para tablas simples
 src/routes/ventas.js   Ventas con transacción y control de stock
+src/routes/reportes.js Reportes con JOIN, GROUP BY y SUM
 src/validacion.js      Validación de datos recibidos
 src/errores.js         Errores claros (incluye errores de Oracle)
 public/                Página web (HTML, CSS y módulos JS)
