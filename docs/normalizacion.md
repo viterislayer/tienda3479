@@ -78,7 +78,7 @@ VENTAS (id PK, cliente_id FK, fecha)
 CLIENTES (id PK, nombre, nit_dpi UNIQUE, correo UNIQUE)
 ```
 
-## Ingresos y egresos (migración 003)
+## Ingresos y egresos
 
 Se aplican las mismas reglas a las compras y a los gastos:
 
@@ -100,7 +100,7 @@ TIPOS_GASTO (id PK, nombre UNIQUE)
 - Una venta tiene muchos productos y un producto aparece en muchas ventas (N:M). **DETALLE_VENTA** resuelve esa relación.
 
 **Reglas de integridad** (`sql/migraciones/`):
-- Llaves primarias con `GENERATED ALWAYS AS IDENTITY` (PostgreSQL genera el id).
+- Llaves primarias `AUTO_INCREMENT` (MySQL genera el id).
 - Índices en las llaves foráneas y en la fecha de venta para acelerar los JOIN y los reportes.
 - Llaves foráneas: no se puede vender a un cliente ni un producto que no existe.
 - `UNIQUE` en el nombre de categoría, en el NIT/DPI y en el correo.

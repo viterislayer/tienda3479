@@ -1,7 +1,14 @@
--- Crea el usuario y la base de datos de la tienda en PostgreSQL.
--- Ejecutar una sola vez como administrador, indicando la contraseña del nuevo usuario:
---   psql -U postgres -h localhost -v clave='LA_CONTRASEÑA' -f sql/crear-base.sql
+-- Crea la base de datos y el usuario de la tienda en MySQL.
+-- Ejecutar una sola vez como administrador (root), indicando la contraseña del nuevo usuario:
+--   mysql -u root -p --init-command="SET @clave='LA_CONTRASEÑA'" < sql/crear-base.sql
 -- La misma contraseña va en DB_PASSWORD del archivo .env
 
-CREATE ROLE tienda3479 LOGIN PASSWORD :'clave';
-CREATE DATABASE tienda3479 OWNER tienda3479 ENCODING 'UTF8';
+CREATE DATABASE IF NOT EXISTS tienda3479 CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
+SET @crear = CONCAT('CREATE USER IF NOT EXISTS ''tienda3479''@''localhost'' IDENTIFIED BY ', QUOTE(@clave));
+PREPARE sentencia FROM @crear;
+EXECUTE sentencia;
+DEALLOCATE PREPARE sentencia;
+
+GRANT ALL PRIVILEGES ON tienda3479.* TO 'tienda3479'@'localhost';
+FLUSH PRIVILEGES;

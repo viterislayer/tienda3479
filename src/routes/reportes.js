@@ -4,10 +4,8 @@ const db = require('../db');
 const router = express.Router();
 const DIAS_GRAFICA = 14;
 const STOCK_BAJO = 3;
-// Las fechas se guardan con zona horaria; los días se cuentan en hora de Guatemala
-const ZONA = 'America/Guatemala';
-const HOY = `(now() AT TIME ZONE '${ZONA}')::date`;
-const DIA_VENTA = `(v.fecha AT TIME ZONE '${ZONA}')::date`;
+// Las conexiones trabajan en hora de Guatemala, así que CURDATE() y DATE(fecha) ya son días de Guatemala
+const INICIO_MES = `DATE_FORMAT(CURDATE(), '%Y-%m-01')`;
 
 // Cantidad de ventas y monto vendido a partir de un día (o de todo el historial)
 async function totalesDesde(desde) {
@@ -16,39 +14,44 @@ async function totalesDesde(desde) {
             COALESCE(SUM(d.cantidad * d.precio_unitario), 0) AS total
        FROM ventas v
        JOIN detalle_venta d ON d.venta_id = v.id
-      WHERE ${desde ? `${DIA_VENTA} >= ${desde}` : 'TRUE'}`
+      WHERE ${desde ? `DATE(v.fecha) >= ${desde}` : 'TRUE'}`
   );
   return rows[0];
 }
 
 router.get('/resumen', async (req, res) => {
   const [hoy, mes, total, egresosMes, stock, porDia, topProductos, porCategoria, topClientes] = await Promise.all([
-    totalesDesde(HOY),
-    totalesDesde(`date_trunc('month', ${HOY})::date`),
+    totalesDesde('CURDATE()'),
+    totalesDesde(INICIO_MES),
     totalesDesde(null),
     db.query(
-      `SELECT COALESCE(SUM(monto) FILTER (WHERE origen = 'Compra'), 0) AS compras,
-              COALESCE(SUM(monto) FILTER (WHERE origen = 'Gasto'), 0) AS gastos
+      `SELECT COALESCE(SUM(CASE WHEN origen = 'Compra' THEN monto END), 0) AS compras,
+              COALESCE(SUM(CASE WHEN origen = 'Gasto' THEN monto END), 0) AS gastos
          FROM vista_movimientos
-        WHERE tipo = 'Egreso' AND fecha >= date_trunc('month', ${HOY})::date`
+        WHERE tipo = 'Egreso' AND fecha >= ${INICIO_MES}`
     ),
     db.query(
-      `SELECT COUNT(*) FILTER (WHERE stock = 0) AS agotados,
-              COUNT(*) FILTER (WHERE stock BETWEEN 1 AND $1) AS bajos
+      `SELECT COUNT(CASE WHEN stock = 0 THEN 1 END) AS agotados,
+              COUNT(CASE WHEN stock BETWEEN 1 AND ? THEN 1 END) AS bajos
          FROM productos`,
       [STOCK_BAJO]
     ),
-    // generate_series crea los 14 días aunque no haya ventas; el LEFT JOIN los deja en 0
+    // WITH RECURSIVE genera los 14 días aunque no haya ventas; el LEFT JOIN los deja en 0
     db.query(
-      `SELECT to_char(dias.dia, 'YYYY-MM-DD') AS dia,
+      `WITH RECURSIVE dias (dia) AS (
+         SELECT CURDATE() - INTERVAL ? DAY
+         UNION ALL
+         SELECT dia + INTERVAL 1 DAY FROM dias WHERE dia < CURDATE()
+       )
+       SELECT DATE_FORMAT(dias.dia, '%Y-%m-%d') AS dia,
               COUNT(DISTINCT v.id) AS cantidad,
               COALESCE(SUM(d.cantidad * d.precio_unitario), 0) AS total
-         FROM generate_series(${HOY} - ($1::int - 1), ${HOY}, interval '1 day') AS dias(dia)
-         LEFT JOIN ventas v ON ${DIA_VENTA} = dias.dia::date
+         FROM dias
+         LEFT JOIN ventas v ON DATE(v.fecha) = dias.dia
          LEFT JOIN detalle_venta d ON d.venta_id = v.id
         GROUP BY dias.dia
         ORDER BY dias.dia`,
-      [DIAS_GRAFICA]
+      [DIAS_GRAFICA - 1]
     ),
     db.query(
       `SELECT p.nombre AS producto, SUM(d.cantidad) AS unidades, SUM(d.cantidad * d.precio_unitario) AS total

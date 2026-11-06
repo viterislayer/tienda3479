@@ -1,6 +1,6 @@
 # Tienda 3479
 
-Sistema de ventas con base de datos **PostgreSQL** normalizada (3FN), API REST en Node.js y página web.
+Sistema de ventas con base de datos **MySQL** normalizada (3FN), API REST en Node.js y página web.
 
 Incluye ventas y compras con control de stock, gastos de operación, ingresos/egresos con balance,
 panel de resumen con gráfica, comprobante imprimible, buscador y exportación a CSV.
@@ -11,17 +11,17 @@ panel de resumen con gráfica, comprobante imprimible, buscador y exportación a
 
 | Capa          | Tecnología                                   |
 |---------------|----------------------------------------------|
-| Base de datos | PostgreSQL 17                                |
-| Backend       | Node.js 20+, Express 5, `pg` (node-postgres) |
+| Base de datos | MySQL 8                                      |
+| Backend       | Node.js 20+, Express 5, `mysql2`             |
 | Frontend      | HTML, CSS y JavaScript (módulos ES), sin frameworks |
 | Producción    | Docker Compose, Caddy (HTTPS automático), VPS Ubuntu |
 
 ## Cómo ejecutar en local
 
-1. Crear el usuario y la base (una sola vez, como administrador de PostgreSQL):
+1. Crear el usuario y la base (una sola vez, como administrador `root` de MySQL):
 
 ```
-psql -U postgres -h localhost -v clave='LA_CONTRASEÑA' -f sql/crear-base.sql
+mysql -u root -p --init-command="SET @clave='LA_CONTRASEÑA'" < sql/crear-base.sql
 ```
 
 2. Copiar `.env.example` como `.env` y poner esa misma contraseña en `DB_PASSWORD`.
@@ -47,7 +47,7 @@ npm start
 ### Migraciones
 
 Cada cambio de estructura es un archivo numerado en `sql/migraciones/`. `db:migrar` aplica en orden los que faltan,
-cada uno en su propia transacción, y los registra en la tabla `schema_migraciones`. El despliegue las aplica solo.
+y los registra en la tabla `schema_migraciones`. El despliegue las aplica solo.
 
 ## Base de datos
 
@@ -61,9 +61,9 @@ TIPOS_GASTO 1─N GASTOS
 
 - Llaves primarias `GENERATED ALWAYS AS IDENTITY` y llaves foráneas en todas las relaciones.
 - Reglas `CHECK`: precio y stock no negativos, cantidad mayor que cero, nombres no vacíos, formato de correo y de NIT/DPI.
-- Únicos sin distinguir mayúsculas (índices sobre `lower()`): nombre de categoría y correo; NIT/DPI único.
+- Únicos (sin distinguir mayúsculas, por la intercalación `utf8mb4_0900_ai_ci`): nombre de categoría, correo, NIT/DPI y NIT de proveedor.
 - Índices en las llaves foráneas y en la fecha de venta.
-- Auditoría: `creado_en` en categorías, productos y clientes; `ventas.fecha` es `TIMESTAMPTZ`.
+- Auditoría: `creado_en` en los catálogos; las fechas se guardan en hora de Guatemala (UTC-6).
 - Vistas: `vista_ventas`, `vista_compras` (totales calculados), `vista_inventario` (estado del stock),
   `vista_movimientos` (ingresos y egresos en un solo listado) y `vista_balance_mensual`.
 - Tablas, columnas y vistas documentadas con `COMMENT` (visible en pgAdmin).
@@ -113,7 +113,7 @@ Ejemplos listos para probar en `requests.http` (extensión REST Client).
 ```
 sql/
   crear-base.sql       Usuario y base de datos (una sola vez)
-  migraciones/         Estructura versionada: 001 tablas, 002 reglas y vistas, 003 ingresos y egresos
+  migraciones/         Estructura versionada: 001 tablas (llaves, reglas, índices), 002 vistas
   datos.sql            Datos de la tienda
   consultas.sql        Consultas para revisar la base (estructura, relaciones, vistas)
 docs/normalizacion.md  Normalización paso a paso
@@ -124,13 +124,13 @@ src/
   server.js            Servidor Express y montaje de rutas
   db.js                Pool de conexiones y transacciones
   validacion.js        Validación de datos recibidos
-  errores.js           Errores claros (traduce los códigos de PostgreSQL)
+  errores.js           Errores claros (traduce los códigos de MySQL)
   routes/
     crud.js            CRUD genérico para tablas simples
     ventas.js          Ventas con transacción y control de stock
     compras.js         Compras a proveedores: aumentan el stock
     finanzas.js        Ingresos, egresos y balance
-    reportes.js        Reportes con JOIN, GROUP BY y generate_series
+    reportes.js        Reportes con JOIN, GROUP BY y WITH RECURSIVE
 public/
   index.html           Página
   styles.css           Estilos
@@ -143,10 +143,10 @@ docker-compose.yml     Servicio de producción
 ## Producción
 
 VPS (Ubuntu 24.04) con Docker. La app corre en `/opt/tienda3479` y usa la infraestructura compartida
-del servidor (`/opt/infra`): PostgreSQL 17 (`postgres:5432`) y HTTPS con Caddy, unidos por la red `web`.
+del servidor (`/opt/infra`): MySQL 8.4 (`mysql:3306`) y HTTPS con Caddy, unidos por la red `web`.
 En el servidor, `/opt/tienda3479/.env` define `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
 
-Panel web de la base de datos (pgweb, solo lectura, protegido con usuario y contraseña):
+Panel web de la base de datos (phpMyAdmin, solo lectura, protegido con usuario y contraseña):
 https://db.187-127-254-87.sslip.io
 
 Publicar cambios:

@@ -24,7 +24,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/api/estado', async (req, res) => {
-  const { rows } = await db.query('SELECT current_user AS usuario, current_database() AS base');
+  const { rows } = await db.query('SELECT CURRENT_USER() AS usuario, DATABASE() AS base');
   res.json({ conectado: true, ...rows[0] });
 });
 
@@ -95,7 +95,7 @@ db.init()
     app.listen(port, () => console.log(`Servidor listo en http://localhost:${port}`));
   })
   .catch(err => {
-    console.error('No se pudo conectar a PostgreSQL:', err.message);
+    console.error('No se pudo conectar a MySQL:', err.message);
     process.exit(1);
   });
 

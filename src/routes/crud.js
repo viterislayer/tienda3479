@@ -5,7 +5,7 @@ const { leerCampos, leerId } = require('../validacion');
 
 /**
  * Crea las rutas GET, POST, PUT y DELETE de una tabla.
- * - campos: columnas editables y su tipo ('texto', 'numero', 'entero')
+ * - campos: columnas editables y su tipo ('texto', 'fecha', 'numero', 'entero')
  * - consulta: SELECT para listar (permite JOIN); por defecto lee la tabla sola
  * - columnaId: columna id dentro de la consulta (ej. 'p.id' si hay alias)
  */
@@ -15,7 +15,7 @@ function crearCrud({ tabla, campos, requeridos = [], consulta, columnaId = 'id',
   const select = consulta || `SELECT id, ${columnas.join(', ')} FROM ${tabla}`;
 
   async function buscar(id) {
-    const { rows } = await db.query(`${select} WHERE ${columnaId} = $1`, [id]);
+    const { rows } = await db.query(`${select} WHERE ${columnaId} = ?`, [id]);
     if (!rows.length) throw new ErrorApi(404, 'Registro no encontrado.');
     return rows[0];
   }
@@ -31,21 +31,18 @@ function crearCrud({ tabla, campos, requeridos = [], consulta, columnaId = 'id',
 
   router.post('/', async (req, res) => {
     const datos = leerCampos(req.body, campos, requeridos);
-    const { rows } = await db.query(
-      `INSERT INTO ${tabla} (${columnas.join(', ')})
-       VALUES (${columnas.map((_, i) => `$${i + 1}`).join(', ')})
-       RETURNING id`,
+    const { insertId } = await db.query(
+      `INSERT INTO ${tabla} (${columnas.join(', ')}) VALUES (${columnas.map(() => '?').join(', ')})`,
       columnas.map(c => datos[c])
     );
-    res.status(201).json(await buscar(rows[0].id));
+    res.status(201).json(await buscar(insertId));
   });
 
   router.put('/:id', async (req, res) => {
     const id = leerId(req.params.id);
     const datos = leerCampos(req.body, campos, requeridos);
     const { rowCount } = await db.query(
-      `UPDATE ${tabla} SET ${columnas.map((c, i) => `${c} = $${i + 1}`).join(', ')}
-        WHERE id = $${columnas.length + 1}`,
+      `UPDATE ${tabla} SET ${columnas.map(c => `${c} = ?`).join(', ')} WHERE id = ?`,
       [...columnas.map(c => datos[c]), id]
     );
     if (!rowCount) throw new ErrorApi(404, 'Registro no encontrado.');
@@ -53,7 +50,7 @@ function crearCrud({ tabla, campos, requeridos = [], consulta, columnaId = 'id',
   });
 
   router.delete('/:id', async (req, res) => {
-    const { rowCount } = await db.query(`DELETE FROM ${tabla} WHERE id = $1`, [leerId(req.params.id)]);
+    const { rowCount } = await db.query(`DELETE FROM ${tabla} WHERE id = ?`, [leerId(req.params.id)]);
     if (!rowCount) throw new ErrorApi(404, 'Registro no encontrado.');
     res.status(204).end();
   });
