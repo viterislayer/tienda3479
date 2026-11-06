@@ -1,6 +1,6 @@
 import {
   api, $, escapar, moneda, aviso, opcionesSelect, insigniaStock, filaVacia, filaCargando,
-  coincide, descargarCsv, hoyArchivo,
+  coincide, descargarCsv, hoyArchivo, fechaHoy, fechaCorta,
 } from './comun.js';
 
 // Configuración de cada tabla administrable desde la página
@@ -32,6 +32,35 @@ export const TABLAS = {
       { col: 'nombre', etiqueta: 'Nombre', tipo: 'text', requerido: true },
       { col: 'nit_dpi', etiqueta: 'NIT / DPI', tipo: 'text', requerido: true },
       { col: 'correo', etiqueta: 'Correo', tipo: 'email' },
+    ],
+  },
+  proveedores: {
+    ruta: '/api/proveedores',
+    singular: 'proveedor',
+    plural: 'Proveedores',
+    campos: [
+      { col: 'nombre', etiqueta: 'Nombre', tipo: 'text', requerido: true },
+      { col: 'nit', etiqueta: 'NIT', tipo: 'text', requerido: true },
+      { col: 'telefono', etiqueta: 'Teléfono', tipo: 'tel' },
+    ],
+  },
+  tipos_gasto: {
+    ruta: '/api/tipos-gasto',
+    singular: 'tipo de gasto',
+    plural: 'Tipos de gasto',
+    campos: [
+      { col: 'nombre', etiqueta: 'Nombre', tipo: 'text', requerido: true },
+    ],
+  },
+  gastos: {
+    ruta: '/api/gastos',
+    singular: 'gasto',
+    plural: 'Gastos',
+    campos: [
+      { col: 'fecha', etiqueta: 'Fecha', tipo: 'date', requerido: true, porDefecto: fechaHoy, formato: fechaCorta },
+      { col: 'tipo_gasto_id', etiqueta: 'Tipo', tipo: 'select', origen: '/api/tipos-gasto', mostrar: 'tipo_gasto', requerido: true },
+      { col: 'descripcion', etiqueta: 'Descripción', tipo: 'text', requerido: true },
+      { col: 'monto', etiqueta: 'Monto (Q)', tipo: 'number', step: '0.01', min: '0.01', requerido: true, num: true, formato: moneda },
     ],
   },
 };
@@ -73,7 +102,9 @@ function limpiar() {
   editandoId = null;
   const form = $('form-crud');
   form.reset();
-  for (const c of config.campos) if (c.porDefecto !== undefined) form.elements[c.col].value = c.porDefecto;
+  for (const c of config.campos) {
+    if (c.porDefecto !== undefined) form.elements[c.col].value = typeof c.porDefecto === 'function' ? c.porDefecto() : c.porDefecto;
+  }
   $('crud-titulo').textContent = `Nuevo ${config.singular}`;
   $('crud-cancelar').hidden = true;
 }

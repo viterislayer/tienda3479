@@ -3,6 +3,8 @@ const { Pool, types } = require('pg');
 // PostgreSQL entrega NUMERIC y BIGINT (resultado de COUNT/SUM) como texto; la API los entrega como números
 types.setTypeParser(types.builtins.NUMERIC, valor => parseFloat(valor));
 types.setTypeParser(types.builtins.INT8, valor => parseInt(valor, 10));
+// DATE se entrega tal cual ('2026-11-05') para no correrse de día por la zona horaria
+types.setTypeParser(types.builtins.DATE, valor => valor);
 
 const configuracion = {
   host: process.env.DB_HOST,

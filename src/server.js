@@ -4,6 +4,8 @@ const express = require('express');
 const db = require('./db');
 const crearCrud = require('./routes/crud');
 const ventas = require('./routes/ventas');
+const compras = require('./routes/compras');
+const finanzas = require('./routes/finanzas');
 const reportes = require('./routes/reportes');
 const { manejarErrores } = require('./errores');
 
@@ -51,7 +53,34 @@ app.use('/api/clientes', crearCrud({
   orden: 'nombre',
 }));
 
+app.use('/api/proveedores', crearCrud({
+  tabla: 'proveedores',
+  campos: { nombre: 'texto', nit: 'texto', telefono: 'texto' },
+  requeridos: ['nombre', 'nit'],
+  orden: 'nombre',
+}));
+
+app.use('/api/tipos-gasto', crearCrud({
+  tabla: 'tipos_gasto',
+  campos: { nombre: 'texto' },
+  requeridos: ['nombre'],
+  orden: 'nombre',
+}));
+
+app.use('/api/gastos', crearCrud({
+  tabla: 'gastos',
+  campos: { fecha: 'fecha', tipo_gasto_id: 'entero', descripcion: 'texto', monto: 'numero' },
+  requeridos: ['fecha', 'tipo_gasto_id', 'descripcion', 'monto'],
+  consulta: `SELECT g.id, g.fecha, g.tipo_gasto_id, t.nombre AS tipo_gasto, g.descripcion, g.monto
+               FROM gastos g
+               JOIN tipos_gasto t ON t.id = g.tipo_gasto_id`,
+  columnaId: 'g.id',
+  orden: 'g.fecha DESC, g.id DESC',
+}));
+
 app.use('/api/ventas', ventas);
+app.use('/api/compras', compras);
+app.use('/api/finanzas', finanzas);
 app.use('/api/reportes', reportes);
 
 app.use('/api', (req, res) => {

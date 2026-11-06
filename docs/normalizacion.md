@@ -78,6 +78,22 @@ VENTAS (id PK, cliente_id FK, fecha)
 CLIENTES (id PK, nombre, nit_dpi UNIQUE, correo UNIQUE)
 ```
 
+## Ingresos y egresos (migración 003)
+
+Se aplican las mismas reglas a las compras y a los gastos:
+
+```
+PROVEEDORES (id PK, nombre, nit UNIQUE, telefono)
+     1 ─ N  COMPRAS (id PK, proveedor_id FK, fecha)
+                 1 ─ N  DETALLE_COMPRA (compra_id PK/FK, producto_id PK/FK, cantidad, costo_unitario)
+TIPOS_GASTO (id PK, nombre UNIQUE)
+     1 ─ N  GASTOS (id PK, tipo_gasto_id FK, descripcion, monto, fecha)
+```
+
+- `DETALLE_COMPRA` resuelve la relación N:M entre compras y productos, igual que `DETALLE_VENTA`.
+- El nombre del tipo de gasto vive en `TIPOS_GASTO` (no se repite en cada gasto) → 3FN.
+- Los totales y el balance **no se guardan**: se calculan en `vista_movimientos` y `vista_balance_mensual`.
+
 **Relaciones:**
 - Una categoría tiene muchos productos (1:N).
 - Un cliente tiene muchas ventas (1:N).

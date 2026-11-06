@@ -22,10 +22,16 @@ async function totalesDesde(desde) {
 }
 
 router.get('/resumen', async (req, res) => {
-  const [hoy, mes, total, stock, porDia, topProductos, porCategoria, topClientes] = await Promise.all([
+  const [hoy, mes, total, egresosMes, stock, porDia, topProductos, porCategoria, topClientes] = await Promise.all([
     totalesDesde(HOY),
     totalesDesde(`date_trunc('month', ${HOY})::date`),
     totalesDesde(null),
+    db.query(
+      `SELECT COALESCE(SUM(monto) FILTER (WHERE origen = 'Compra'), 0) AS compras,
+              COALESCE(SUM(monto) FILTER (WHERE origen = 'Gasto'), 0) AS gastos
+         FROM vista_movimientos
+        WHERE tipo = 'Egreso' AND fecha >= date_trunc('month', ${HOY})::date`
+    ),
     db.query(
       `SELECT COUNT(*) FILTER (WHERE stock = 0) AS agotados,
               COUNT(*) FILTER (WHERE stock BETWEEN 1 AND $1) AS bajos
@@ -71,9 +77,12 @@ router.get('/resumen', async (req, res) => {
     ),
   ]);
 
+  const { compras, gastos } = egresosMes.rows[0];
   res.json({
     hoy,
     mes,
+    egresos_mes: { compras, gastos, total: compras + gastos },
+    balance_mes: mes.total - compras - gastos,
     ticket_promedio: total.cantidad ? total.total / total.cantidad : 0,
     stock: stock.rows[0],
     por_dia: porDia.rows,

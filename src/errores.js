@@ -28,6 +28,15 @@ const RESTRICCIONES = {
   ck_clientes_correo: [400, 'El correo no tiene un formato válido.'],
   productos_precio_check: [400, 'El precio no puede ser negativo.'],
   productos_stock_check: [400, 'El stock no puede ser negativo.'],
+  uq_proveedores_nit: [409, 'Ya existe un proveedor con ese NIT.'],
+  ck_proveedores_nombre: [400, 'El nombre no puede estar vacío.'],
+  ck_proveedores_nit: [400, 'El NIT solo puede tener números, K y guion.'],
+  uq_tipos_gasto_nombre: [409, 'Ya existe un tipo de gasto con ese nombre.'],
+  ck_tipos_gasto_nombre: [400, 'El nombre no puede estar vacío.'],
+  ck_gastos_descripcion: [400, 'La descripción no puede estar vacía.'],
+  ck_gastos_monto: [400, 'El monto debe ser mayor que cero.'],
+  ck_detalle_compra_cantidad: [400, 'La cantidad debe ser mayor que cero.'],
+  ck_detalle_compra_costo: [400, 'El costo no puede ser negativo.'],
 };
 
 function manejarErrores(err, req, res, next) {

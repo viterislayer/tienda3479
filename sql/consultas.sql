@@ -6,7 +6,12 @@ SELECT 'categorias' AS tabla, COUNT(*) AS registros FROM categorias
 UNION ALL SELECT 'productos', COUNT(*) FROM productos
 UNION ALL SELECT 'clientes', COUNT(*) FROM clientes
 UNION ALL SELECT 'ventas', COUNT(*) FROM ventas
-UNION ALL SELECT 'detalle_venta', COUNT(*) FROM detalle_venta;
+UNION ALL SELECT 'detalle_venta', COUNT(*) FROM detalle_venta
+UNION ALL SELECT 'proveedores', COUNT(*) FROM proveedores
+UNION ALL SELECT 'compras', COUNT(*) FROM compras
+UNION ALL SELECT 'detalle_compra', COUNT(*) FROM detalle_compra
+UNION ALL SELECT 'tipos_gasto', COUNT(*) FROM tipos_gasto
+UNION ALL SELECT 'gastos', COUNT(*) FROM gastos;
 
 -- 1b. Migraciones aplicadas a la base
 SELECT version, aplicada_en FROM schema_migraciones ORDER BY version;
@@ -14,6 +19,11 @@ SELECT version, aplicada_en FROM schema_migraciones ORDER BY version;
 -- 1c. Vistas: inventario con estado del stock y ventas con su total
 SELECT * FROM vista_inventario ORDER BY id;
 SELECT * FROM vista_ventas ORDER BY id DESC;
+SELECT * FROM vista_compras ORDER BY id DESC;
+
+-- 1d. Ingresos y egresos, y balance por mes
+SELECT * FROM vista_movimientos ORDER BY fecha DESC;
+SELECT * FROM vista_balance_mensual ORDER BY mes DESC;
 
 -- 2. Estructura: columnas, tipos y si aceptan nulos
 SELECT table_name AS tabla, column_name AS columna, data_type AS tipo, is_nullable AS acepta_nulo

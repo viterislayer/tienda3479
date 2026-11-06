@@ -1,9 +1,16 @@
 const { ErrorApi } = require('./errores');
 
-// Convierte y valida un valor según su tipo: 'texto', 'numero' o 'entero'
+// Convierte y valida un valor según su tipo: 'texto', 'fecha', 'numero' o 'entero'
 function convertir(campo, tipo, valor) {
   if (valor === undefined || valor === null || String(valor).trim() === '') return null;
   if (tipo === 'texto') return String(valor).trim();
+  if (tipo === 'fecha') {
+    const texto = String(valor).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(texto) || Number.isNaN(Date.parse(texto))) {
+      throw new ErrorApi(400, `El campo "${campo}" debe ser una fecha válida (AAAA-MM-DD).`);
+    }
+    return texto;
+  }
 
   const numero = Number(valor);
   if (!Number.isFinite(numero)) throw new ErrorApi(400, `El campo "${campo}" debe ser un número.`);

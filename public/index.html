@@ -18,6 +18,7 @@
       </div>
 
       <nav id="pestanas" aria-label="Secciones">
+        <p class="grupo-nav">Operación</p>
         <button data-vista="resumen" class="activa" aria-current="page">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
           Resumen
@@ -26,6 +27,19 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2l2.4 12.2a2 2 0 0 0 2 1.8h7.7a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>
           Ventas
         </button>
+        <button data-vista="compras">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18l-1.5 12.5a2 2 0 0 1-2 1.5H6.5a2 2 0 0 1-2-1.5L3 7z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
+          Compras
+        </button>
+        <button data-vista="gastos">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
+          Gastos
+        </button>
+        <button data-vista="finanzas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Finanzas
+        </button>
+        <p class="grupo-nav">Catálogos</p>
         <button data-vista="productos">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
           Productos
@@ -37,6 +51,14 @@
         <button data-vista="clientes">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-5-6.7"/></svg>
           Clientes
+        </button>
+        <button data-vista="proveedores">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          Proveedores
+        </button>
+        <button data-vista="tipos_gasto">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+          Tipos de gasto
         </button>
       </nav>
 
@@ -55,9 +77,9 @@
       <!-- Resumen -->
       <section id="vista-resumen">
         <div class="indicadores cuatro">
-          <div class="indicador"><span>Ventas de hoy</span><strong id="r-hoy">—</strong><small id="r-hoy-monto"></small></div>
-          <div class="indicador"><span>Ingresos del mes</span><strong id="r-mes">—</strong><small id="r-mes-ventas"></small></div>
-          <div class="indicador"><span>Ticket promedio</span><strong id="r-ticket">—</strong><small>por venta</small></div>
+          <div class="indicador"><span>Ingresos del mes</span><strong id="r-ingresos">—</strong><small id="r-ingresos-detalle"></small></div>
+          <div class="indicador"><span>Egresos del mes</span><strong id="r-egresos">—</strong><small id="r-egresos-detalle"></small></div>
+          <div class="indicador"><span>Balance del mes</span><strong id="r-balance">—</strong><small id="r-balance-detalle"></small></div>
           <div class="indicador"><span>Inventario</span><strong id="r-stock">—</strong><small id="r-stock-detalle"></small></div>
         </div>
 
@@ -145,7 +167,109 @@
         </div>
       </section>
 
-      <!-- Productos, categorías y clientes (vista genérica) -->
+      <!-- Compras a proveedores -->
+      <section id="vista-compras" hidden>
+        <div class="rejilla-venta">
+          <div class="tarjeta">
+            <h2>Nueva compra</h2>
+            <form id="form-compra" class="formulario">
+              <label class="completo">Proveedor
+                <select id="compra-proveedor" required></select>
+              </label>
+              <label class="completo">Producto
+                <select id="compra-producto"></select>
+              </label>
+              <label>Cantidad
+                <input id="compra-cantidad" type="number" min="1" step="1" value="1">
+              </label>
+              <label>Costo unitario (Q)
+                <input id="compra-costo" type="number" min="0" step="0.01" placeholder="0.00">
+              </label>
+              <button type="button" id="btn-agregar-compra" class="secundario completo">Agregar al detalle</button>
+            </form>
+          </div>
+
+          <div class="tarjeta resumen-venta">
+            <h2>Detalle de la compra</h2>
+            <div class="tabla-contenedor">
+              <table class="tabla compacta">
+                <thead>
+                  <tr><th>Producto</th><th class="num">Cant.</th><th class="num">Subtotal</th><th><span class="sr-only">Acciones</span></th></tr>
+                </thead>
+                <tbody id="compra-lineas"></tbody>
+              </table>
+            </div>
+            <div class="total">
+              <span>Total</span>
+              <strong id="compra-total">Q 0.00</strong>
+            </div>
+            <button type="submit" form="form-compra" class="primario ancho">Registrar compra</button>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <div class="tarjeta-cabecera">
+            <h2>Historial de compras</h2>
+            <div class="herramientas">
+              <input id="compras-buscar" type="search" placeholder="Buscar por proveedor, número o fecha" aria-label="Buscar compras">
+              <button type="button" id="compras-csv" class="secundario">Exportar CSV</button>
+            </div>
+          </div>
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead>
+                <tr><th>#</th><th>Fecha</th><th>Proveedor</th><th class="num">Productos</th><th class="num">Total</th><th><span class="sr-only">Acciones</span></th></tr>
+              </thead>
+              <tbody id="compras-lista"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Finanzas: ingresos y egresos -->
+      <section id="vista-finanzas" hidden>
+        <div class="tarjeta">
+          <form id="form-finanzas" class="formulario">
+            <label>Desde <input id="fin-desde" type="date" required></label>
+            <label>Hasta <input id="fin-hasta" type="date" required></label>
+            <button type="submit" class="primario">Consultar</button>
+            <button type="button" id="fin-csv" class="secundario">Exportar CSV</button>
+          </form>
+        </div>
+
+        <div class="indicadores cuatro">
+          <div class="indicador"><span>Ingresos</span><strong id="fin-ingresos">—</strong><small>ventas</small></div>
+          <div class="indicador"><span>Compras</span><strong id="fin-compras">—</strong><small>mercadería</small></div>
+          <div class="indicador"><span>Gastos</span><strong id="fin-gastos">—</strong><small>operación</small></div>
+          <div class="indicador"><span>Balance</span><strong id="fin-balance">—</strong><small id="fin-balance-detalle"></small></div>
+        </div>
+
+        <div class="tarjeta">
+          <h2>Movimientos</h2>
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead>
+                <tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="num">Monto</th></tr>
+              </thead>
+              <tbody id="fin-lista"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <h2>Balance por mes</h2>
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead>
+                <tr><th>Mes</th><th class="num">Ingresos</th><th class="num">Egresos</th><th class="num">Balance</th></tr>
+              </thead>
+              <tbody id="fin-meses"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Catálogos y gastos (vista genérica) -->
       <section id="vista-crud" hidden>
         <div class="tarjeta">
           <h2 id="crud-titulo"></h2>

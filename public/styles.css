@@ -60,6 +60,8 @@ nav button { display: flex; align-items: center; gap: 12px; width: 100%; padding
 nav button:hover { background: rgba(255, 255, 255, .05); color: #f4f4f2; }
 nav button.activa { background: rgba(255, 255, 255, .07); color: #fff; font-weight: 600; }
 nav button.activa::before { content: ""; position: absolute; left: -14px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--titanio); }
+.grupo-nav { margin: 14px 12px 6px; color: #6f7278; font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.grupo-nav:first-child { margin-top: 0; }
 nav svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
 .estado { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 8px; background: rgba(255, 255, 255, .05); font-size: .8rem; }
@@ -159,6 +161,8 @@ button:disabled { opacity: .55; cursor: default; }
 .insignia { display: inline-block; min-width: 38px; padding: 3px 9px; border-radius: 6px; font-size: .8rem; font-weight: 700; text-align: center; white-space: nowrap; }
 .insignia.ok { background: var(--exito-claro); color: var(--exito); }
 .insignia.alerta { background: var(--alerta-claro); color: var(--alerta); }
+.insignia.egreso { background: var(--superficie-2); color: var(--etiqueta); border: 1px solid var(--borde); }
+.monto-egreso { color: var(--suave); }
 .insignia.peligro { background: var(--peligro-claro); color: var(--peligro); }
 
 /* Detalle de la venta (estilo recibo) */
@@ -215,6 +219,7 @@ nav button:focus-visible { outline-color: rgba(255, 255, 255, .5); }
   .marca { padding: 0; margin: 0; border: none; flex: 1; }
   nav { flex-direction: row; overflow-x: auto; width: 100%; min-width: 0; order: 3; padding-top: 0; }
   nav button { width: auto; white-space: nowrap; }
+  .grupo-nav { display: none; }
   nav button.activa::before { display: none; }
   .estado { margin-top: 0; }
   .contenido { padding: 22px 16px 36px; }

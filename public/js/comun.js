@@ -85,6 +85,21 @@ export function descargarCsv(nombreArchivo, columnas, filas) {
   URL.revokeObjectURL(enlace.href);
 }
 
-export function hoyArchivo() {
-  return new Date().toISOString().slice(0, 10);
+// Fecha de hoy en hora local, formato AAAA-MM-DD (para inputs de fecha y nombres de archivo)
+export function fechaHoy() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export const hoyArchivo = fechaHoy;
+
+// Primer día del mes actual, formato AAAA-MM-DD
+export function inicioDeMes() {
+  return `${fechaHoy().slice(0, 8)}01`;
+}
+
+// '2026-11-05' -> '05/11/2026' (sin conversión de zona horaria)
+export function fechaCorta(valor) {
+  const [a, m, d] = String(valor).split('-');
+  return `${d}/${m}/${a}`;
 }

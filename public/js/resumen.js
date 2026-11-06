@@ -120,11 +120,12 @@ export async function mostrarResumen() {
   const r = await api('/api/reportes/resumen');
   dias = r.por_dia;
 
-  $('r-hoy').textContent = r.hoy.cantidad;
-  $('r-hoy-monto').textContent = `${moneda(r.hoy.total)} vendidos`;
-  $('r-mes').textContent = moneda(r.mes.total);
-  $('r-mes-ventas').textContent = `${r.mes.cantidad} ${r.mes.cantidad === 1 ? 'venta' : 'ventas'} este mes`;
-  $('r-ticket').textContent = moneda(r.ticket_promedio);
+  $('r-ingresos').textContent = moneda(r.mes.total);
+  $('r-ingresos-detalle').textContent = `${r.mes.cantidad} ${r.mes.cantidad === 1 ? 'venta' : 'ventas'} · hoy ${moneda(r.hoy.total)}`;
+  $('r-egresos').textContent = moneda(r.egresos_mes.total);
+  $('r-egresos-detalle').textContent = `Compras ${moneda(r.egresos_mes.compras)} · Gastos ${moneda(r.egresos_mes.gastos)}`;
+  $('r-balance').textContent = moneda(r.balance_mes);
+  $('r-balance-detalle').textContent = r.balance_mes > 0 ? 'Ganancia del mes' : r.balance_mes < 0 ? 'Pérdida del mes' : 'Sin diferencia';
   const alertas = r.stock.bajos + r.stock.agotados;
   $('r-stock').textContent = alertas ? `${alertas} ${alertas === 1 ? 'alerta' : 'alertas'}` : 'En orden';
   $('r-stock-detalle').textContent = `${r.stock.bajos} con stock bajo · ${r.stock.agotados} agotados`;
