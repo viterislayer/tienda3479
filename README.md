@@ -5,7 +5,7 @@ Sistema de ventas con base de datos **PostgreSQL** normalizada (3FN), API REST e
 Incluye ventas y compras con control de stock, gastos de operación, ingresos/egresos con balance,
 panel de resumen con gráfica, comprobante imprimible, buscador y exportación a CSV.
 
-**En línea:** https://viteri.vercel.app
+**En línea:** https://viteri.187-127-254-87.sslip.io
 
 ## Tecnologías
 
